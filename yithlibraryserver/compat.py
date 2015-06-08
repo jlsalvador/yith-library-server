@@ -40,8 +40,7 @@ else:  # pragma: no cover
     long = long
 
 if PY3:  # pragma: no cover
-    from urllib import parse
-    urlparse = parse
+    from urllib import parse as urlparse
     from urllib.parse import quote as url_quote
     from urllib.parse import urlencode as url_encode
 else:  # pragma: no cover
