@@ -10,8 +10,8 @@ peppercorn==0.5          # required by deform
 polib==1.0.6             # required by lingua
 pytz==2014.9             # required by Babel
 repoze.lru==0.6          # required by pyramid
-repoze.sendmail==4.2     # required by pyramid_mailer
-transaction==1.4.3       # required by pyramid_mailer and zope.sqlalchemy
+repoze.sendmail==4.1     # required by pyramid_mailer
+transaction==1.4.3       # required by pyramid_mailer
 translationstring==1.1   # required by deform, pyramid
 venusian==1.0            # required by pyramid
 SQLAlchemy==1.0.4        # required by pyramid_sqlalchemy
