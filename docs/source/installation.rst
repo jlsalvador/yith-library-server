@@ -407,7 +407,7 @@ server.
 
 .. code-block:: text
 
-   pserve development.ini
+    pserve yithlibraryserver/config-templates/development.ini
      Starting server in PID 6743.
      serving on http://0.0.0.0:6543
 
