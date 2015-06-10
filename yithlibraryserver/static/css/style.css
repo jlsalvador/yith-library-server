@@ -33,6 +33,7 @@ footer {
     -webkit-border-radius: 5px;
     -moz-border-radius: 5px;
     border-radius: 5px;
+    background-color: #F9F9F9;
 }
 
 .passwords td:first-child .btn.btn-info {
