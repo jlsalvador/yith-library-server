@@ -189,7 +189,7 @@ def destroy(request):
 
     if 'submit' in request.POST:
 
-        if not can_destroy or True:
+        if not can_destroy:
             request.session.flash(
                 _('You must remove your applications before destroying your account'),
                 'error',
