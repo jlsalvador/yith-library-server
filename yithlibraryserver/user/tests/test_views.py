@@ -437,6 +437,47 @@ class ViewTests(TestCase):
             })
             self.assertEqual(res.status, '200 OK')
 
+    def test_destroy_user_who_owns_application_warning_message(self):
+        user_id = create_and_login_user(self.testapp,
+                                        email='john@example.com',
+                                        email_verified=True)
+        app = Application(name='Test Application',
+                          callback_url='https://example.com/callback/',
+                          user_id=user_id
+        )
+        with transaction.manager:
+            Session.add(app)
+            Session.flush()
+
+        res = self.testapp.get('/destroy')
+        res.mustcontain('This account can not be destroyed')
+        res.mustcontain('You can not destroy this account because '
+                        'you are the owner of an application')
+        res.mustcontain('Please remove the application first')
+        res.mustcontain('Go to my appplications')
+
+    def test_destroy_user_who_owns_application_error_message(self):
+        user_id = create_and_login_user(self.testapp,
+                                        email='john@example.com',
+                                        email_verified=True)
+        app = Application(name='Test Application',
+                          callback_url='https://example.com/callback/',
+                          user_id=user_id
+        )
+        with transaction.manager:
+            Session.add(app)
+            Session.flush()
+
+        res = self.testapp.post('/destroy', {
+            'reason': 'I do not need a password manager',
+            'submit': 'Yes, I am sure. Destroy my account',
+        }, status=302)
+        self.assertEqual(res.location, 'http://localhost/oauth2/applications')
+
+        res = self.testapp.get('/oauth2/applications')
+        res.mustcontain('You must remove your applications before '
+                        'destroying your account')
+
     def test_destroy_success(self):
         user_id = create_and_login_user(self.testapp)
 

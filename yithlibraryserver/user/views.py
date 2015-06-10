@@ -180,11 +180,21 @@ def destroy(request):
 
     user = request.user
 
+    can_destroy = len(user.applications) == 0
+
     context = {
         'passwords': len(user.passwords),
+        'can_destroy': can_destroy,
     }
 
     if 'submit' in request.POST:
+
+        if not can_destroy or True:
+            request.session.flash(
+                _('You must remove your applications before destroying your account'),
+                'error',
+            )
+            return HTTPFound(location=request.route_path('oauth2_developer_applications'))
 
         controls = request.POST.items()
         try:
@@ -196,7 +206,6 @@ def destroy(request):
         reason = appstruct['reason']
         notify_admins_of_account_removal(request, user, reason)
 
-        # TODO: remove user's applications
         Session.delete(user)
 
         request.session.flash(

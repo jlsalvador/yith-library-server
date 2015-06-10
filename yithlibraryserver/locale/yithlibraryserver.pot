@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE 1.0\n"
-"POT-Creation-Date: 2015-03-08 21:13-0700\n"
+"POT-Creation-Date: 2015-06-09 22:25-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -22,9 +22,9 @@ msgstr ""
 
 #: ./yithlibraryserver/views.py:46
 #: ./yithlibraryserver/backups/templates/backups_index.pt:64
-#: ./yithlibraryserver/user/views.py:79 ./yithlibraryserver/user/views.py:183
-#: ./yithlibraryserver/oauth2/views.py:72
-#: ./yithlibraryserver/oauth2/views.py:135
+#: ./yithlibraryserver/user/views.py:76 ./yithlibraryserver/user/views.py:176
+#: ./yithlibraryserver/oauth2/views.py:77
+#: ./yithlibraryserver/oauth2/views.py:143
 msgid "Cancel"
 msgstr ""
 
@@ -46,19 +46,19 @@ msgstr ""
 msgid "Message"
 msgstr ""
 
-#: ./yithlibraryserver/contributions/views.py:59
+#: ./yithlibraryserver/contributions/views.py:61
 msgid ""
 "There was a problem in the confirmation process. Please start the checkout "
 "again"
 msgstr ""
 
-#: ./yithlibraryserver/contributions/views.py:120
+#: ./yithlibraryserver/contributions/views.py:145
 msgid ""
 "Thanks for considering donating to Yith Library. We will be ready if you "
 "change your mind"
 msgstr ""
 
-#: ./yithlibraryserver/contributions/views.py:83
+#: ./yithlibraryserver/contributions/views.py:108
 msgid "Thank you very much for your great contribution"
 msgstr ""
 
@@ -353,22 +353,22 @@ msgstr ""
 msgid "No, maybe later"
 msgstr ""
 
-#: ./yithlibraryserver/backups/views.py:90
-#: ./yithlibraryserver/backups/views.py:85
+#: ./yithlibraryserver/backups/views.py:98
+#: ./yithlibraryserver/backups/views.py:93
 msgid "The passwords file is required to upload the passwords"
 msgstr ""
 
-#: ./yithlibraryserver/backups/views.py:76
+#: ./yithlibraryserver/backups/views.py:84
 #, python-format
 msgid "Congratulations, ${n_passwords} password has been imported"
 msgstr ""
 
-#: ./yithlibraryserver/backups/views.py:77
+#: ./yithlibraryserver/backups/views.py:85
 #, python-format
 msgid "Congratulations, ${n_passwords} passwords have been imported"
 msgstr ""
 
-#: ./yithlibraryserver/backups/views.py:69
+#: ./yithlibraryserver/backups/views.py:68
 msgid "There was a problem reading your passwords file"
 msgstr ""
 
@@ -441,58 +441,58 @@ msgstr ""
 msgid "Yes, I am sure"
 msgstr ""
 
-#: ./yithlibraryserver/user/views.py:77
+#: ./yithlibraryserver/user/views.py:74
 msgid "Register into Yith Library"
 msgstr ""
 
-#: ./yithlibraryserver/user/views.py:181
+#: ./yithlibraryserver/user/views.py:174
 msgid "Yes, I am sure. Destroy my account"
 msgstr ""
 
-#: ./yithlibraryserver/user/views.py:231 ./yithlibraryserver/user/views.py:288
+#: ./yithlibraryserver/user/views.py:233 ./yithlibraryserver/user/views.py:282
 msgid "Save changes"
 msgstr ""
 
-#: ./yithlibraryserver/user/views.py:210
+#: ./yithlibraryserver/user/views.py:212
 msgid "Your account has been removed. Have a nice day!"
 msgstr ""
 
-#: ./yithlibraryserver/user/views.py:418
-msgid "Congratulations, your email has been successfully verified"
-msgstr ""
-
-#: ./yithlibraryserver/user/views.py:427
-msgid "Sorry, your verification code is not correct or has expired"
-msgstr ""
-
-#: ./yithlibraryserver/user/views.py:217
-msgid "Thanks for reconsidering removing your account!"
-msgstr ""
-
-#: ./yithlibraryserver/user/views.py:259 ./yithlibraryserver/user/views.py:310
-#: ./yithlibraryserver/oauth2/views.py:163
+#: ./yithlibraryserver/user/views.py:259 ./yithlibraryserver/user/views.py:300
+#: ./yithlibraryserver/oauth2/views.py:165
 msgid "The changes were saved successfully"
 msgstr ""
 
-#: ./yithlibraryserver/user/views.py:265 ./yithlibraryserver/user/views.py:316
-msgid "There were an error while saving your changes"
+#: ./yithlibraryserver/user/views.py:403
+msgid "Congratulations, your email has been successfully verified"
 msgstr ""
 
-#: ./yithlibraryserver/user/views.py:358
+#: ./yithlibraryserver/user/views.py:413
+msgid "Sorry, your verification code is not correct or has expired"
+msgstr ""
+
+#: ./yithlibraryserver/user/views.py:194
+msgid "You must remove your applications before destroying your account"
+msgstr ""
+
+#: ./yithlibraryserver/user/views.py:219
+msgid "Thanks for reconsidering removing your account!"
+msgstr ""
+
+#: ./yithlibraryserver/user/views.py:346
 #, python-format
 msgid ""
 "Congratulations, ${n_merged} of your accounts has been merged into the "
 "current one"
 msgstr ""
 
-#: ./yithlibraryserver/user/views.py:359
+#: ./yithlibraryserver/user/views.py:347
 #, python-format
 msgid ""
 "Congratulations, ${n_merged} of your accounts have been merged into the "
 "current one"
 msgstr ""
 
-#: ./yithlibraryserver/user/views.py:367
+#: ./yithlibraryserver/user/views.py:355
 msgid "Not enough accounts for merging"
 msgstr ""
 
@@ -545,28 +545,42 @@ msgstr ""
 msgid "Destroy account"
 msgstr ""
 
+#: ./yithlibraryserver/user/templates/destroy.pt:18
+msgid "This account can not be destroyed"
+msgstr ""
+
 #: ./yithlibraryserver/user/templates/destroy.pt:19
-msgid "I am tired of using Yith Library"
+msgid ""
+"You can not destroy this account because you are the owner of an application."
+" Please remove the application first."
 msgstr ""
 
 #: ./yithlibraryserver/user/templates/destroy.pt:20
-msgid "We are very sorry to hear that, but hey, it's your decission!"
-msgstr ""
-
-#: ./yithlibraryserver/user/templates/destroy.pt:21
-msgid "Destroy my account ..."
+msgid "Go to my appplications"
 msgstr ""
 
 #: ./yithlibraryserver/user/templates/destroy.pt:25
+msgid "I am tired of using Yith Library"
+msgstr ""
+
+#: ./yithlibraryserver/user/templates/destroy.pt:26
+msgid "We are very sorry to hear that, but hey, it's your decission!"
+msgstr ""
+
+#: ./yithlibraryserver/user/templates/destroy.pt:27
+msgid "Destroy my account ..."
+msgstr ""
+
+#: ./yithlibraryserver/user/templates/destroy.pt:31
 msgid "Do you really really really want to destroy your account?"
 msgstr ""
 
-#: ./yithlibraryserver/user/templates/destroy.pt:29
+#: ./yithlibraryserver/user/templates/destroy.pt:35
 msgid ""
 "All your personal information and passwords will be removed from this server."
 msgstr ""
 
-#: ./yithlibraryserver/user/templates/destroy.pt:31
+#: ./yithlibraryserver/user/templates/destroy.pt:37
 msgid "You will not be able to undo this operation. Think about it."
 msgstr ""
 
@@ -1314,26 +1328,26 @@ msgstr ""
 msgid "I couldn't live a week without a private library."
 msgstr ""
 
-#: ./yithlibraryserver/oauth2/views.py:70
-#: ./yithlibraryserver/oauth2/views.py:131
+#: ./yithlibraryserver/oauth2/views.py:75
+#: ./yithlibraryserver/oauth2/views.py:139
 msgid "Save application"
 msgstr ""
 
-#: ./yithlibraryserver/oauth2/views.py:133
+#: ./yithlibraryserver/oauth2/views.py:141
 msgid "Delete application"
 msgstr ""
 
-#: ./yithlibraryserver/oauth2/views.py:97
+#: ./yithlibraryserver/oauth2/views.py:101
 #, python-format
 msgid "The application ${app} was created successfully"
 msgstr ""
 
-#: ./yithlibraryserver/oauth2/views.py:200
+#: ./yithlibraryserver/oauth2/views.py:218
 #, python-format
 msgid "The application ${app} was deleted successfully"
 msgstr ""
 
-#: ./yithlibraryserver/oauth2/views.py:345
+#: ./yithlibraryserver/oauth2/views.py:387
 #, python-format
 msgid "The access to application ${app} has been revoked"
 msgstr ""
@@ -1521,6 +1535,6 @@ msgstr ""
 msgid "Start using a client"
 msgstr ""
 
-#: ./yithlibraryserver/oauth2/templates/authorized_applications.pt:31
+#: ./yithlibraryserver/oauth2/templates/authorized_applications.pt:35
 msgid "Revoke authorization"
 msgstr ""

@@ -14,7 +14,13 @@
     <h1 i18n:translate="">Destroy account</h1>
   </div>
 
-  <div class="wizard">
+  <div tal:condition="not can_destroy">
+    <h3 i18n:translate="">This account can not be destroyed</h3>
+    <p i18n:translate="">You can not destroy this account because you are the owner of an application. Please remove the application first.</p>
+      <a class="btn btn-default" href="${request.route_path('oauth2_developer_applications')}" i18n:translate="">Go to my appplications</a>
+  </div>
+
+  <div class="wizard" tal:condition="can_destroy">
     <div class="wizard-block">
       <h3 i18n:translate="">I am tired of using Yith Library</h3>
       <p i18n:translate="">We are very sorry to hear that, but hey, it's your decission!</p>
