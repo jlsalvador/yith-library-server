@@ -24,7 +24,7 @@ from pyramid_sqlalchemy import BaseObject
 
 from sqlalchemy import Column, DateTime, Integer, String, Text
 from sqlalchemy import ForeignKey, func
-from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import relationship, backref
 
 
@@ -42,7 +42,7 @@ class Password(BaseObject):
     notes = Column(Text, nullable=False, default='')
     tags = Column(ARRAY(Text, dimensions=1), nullable=False, default=[])
 
-    secret = Column(JSON(none_as_null=True), nullable=False)
+    secret = Column(String, nullable=False, default='')
     account = Column(String, nullable=False, default='')
     service = Column(String, nullable=False, default='')
     expiration = Column(Integer, nullable=True)
