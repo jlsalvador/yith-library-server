@@ -56,8 +56,8 @@
           </ul>
         </div>
 
-	<div class="container" tal:condition="request.google_analytics.enabled and request.google_analytics.first_time">
-	  <div class="alert alert-info">
+	    <div class="container" tal:condition="request.google_analytics.enabled and request.google_analytics.first_time">
+	      <div class="alert alert-info">
             <p>
               <strong tal:condition="not request.user" i18n:translate="">Welcome, new visitor!</strong>
               <strong tal:condition="request.user" i18n:translate="">Welcome <span i18n:name="current-user">${request.user}</span></strong>.
@@ -66,10 +66,14 @@
               <input type="submit" class="btn btn-default" name="yes" value="Ok, I can handle one more cookie" i18n:attributes="value" />
               <input type="submit" class="btn btn-default" name="no" value="No, I don't want to be tracked" i18n:attributes="value" />
             </form>
-	  </div>
-	</div>
+	      </div>
+	    </div>
 
         <div id="messages" class="container">
+          <div class="alert alert-warning" role="alert">
+            This is a beta version of Yith Library intended for testing purposes only. Everything saved in this instance will be lost since its database will be reset in the future. The current production instance is located at <a href="https://yithlibrary.herokuapp.com">https://yithlibrary.herokuapp.com</a>
+          </div>
+
           <div tal:repeat="queue (('info', 'info'), ('success', 'success'), ('error', 'danger'), ('warning', 'warning'), ('', ''))" tal:omit-tag="">
             <div class="alert alert-${queue[1]} alert-dismissible"
                  role="alert"
