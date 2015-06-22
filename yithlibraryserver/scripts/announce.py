@@ -55,8 +55,8 @@ def send_email(request, email_template, user, preferences_link):
 
 
 def announce():
-    usage = "migrate: %prog config_uri migration_name"
-    description = "Add a 'send_email_periodically' preference to every user."
+    usage = "announce: %prog config_uri email_template"
+    description = "Send an announce to every user with a verified email that has at least one password."
     parser = optparse.OptionParser(
         usage=usage,
         description=textwrap.dedent(description)
