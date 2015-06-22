@@ -17,7 +17,6 @@
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-import json
 
 import pymongo
 
@@ -103,8 +102,7 @@ def migrate_applications(mongodb, user_mapping, now):
                 main_url=mongo_application.get('main_url', ''),
                 callback_url=mongo_application.get('callback_url', ''),
                 authorized_origins=mongo_application.get('authorized_origins', []),
-                client_id=client_id,
-                client_secret=mongo_application.get('client_secret', ''),
+                secret=mongo_application.get('client_secret', ''),
                 image_url=mongo_application.get('image_url', ''),
                 description=mongo_application.get('description', ''),
                 production_ready=mongo_application.get('production_ready', False),
@@ -175,7 +173,7 @@ def migrate_passwords(mongodb, user_mapping, now):
                 notes=mongo_password.get('notes', ''),
                 creation=get_date_from_js_timestamp(creation, now),
                 modification=get_date_from_js_timestamp(modification, now),
-                secret=json.loads(mongo_password.get('secret', '')),
+                secret=mongo_password.get('secret', ''),
                 expiration=mongo_password.get('expiration', None),
                 user_id=user_id,
             )
