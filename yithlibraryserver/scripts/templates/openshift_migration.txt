@@ -1,15 +1,16 @@
-Hi ${user.first_name}
+Hi ${user.first_name},
 
-Due to recent changes in the pricing policy of Heroku, our current provider,
-we are not able to keep hosting Yith Library there.
+Due to recent changes in the pricing policy of Heroku, our current hosting
+provider, we are not able to keep hosting Yith Library there.
 
 Fortunately we got a grant from Openshift.com and due to our open source
-nature they are kind enough to give us free hosting!
+nature they are kind enough to give us free hosting! That's right, we will
+continue as a free (as in beer) service.
 
 We will migrating our service from Heroku to Openshift next Saturday June 28th
 at 2:30 AM UTC and there will be a downtime of about 30 minutes.
 
-The new URLs for the service are:
+The new URLs for the service will be:
 
 - https://www.yithlibrary.com for the password server
 - https://desktop.yithlibrary.com for the web client
