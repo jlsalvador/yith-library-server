@@ -16,8 +16,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
+import datetime
 import gzip
 import json
+import numbers
 
 from yithlibraryserver.compat import BytesIO
 from yithlibraryserver.jsonrenderer import datetime_parser, json_renderer
@@ -52,11 +54,24 @@ def uncompress(compressed_data):
 
     def parse_date(item, dt_attr):
         if dt_attr in item:
-            item[dt_attr] = datetime_parser(item[dt_attr])
+            value = item[dt_attr]
+            if isinstance(value, numbers.Integral):
+                datetime_value = datetime.datetime.fromtimestamp(value / 1000.0)
+            else:
+                datetime_value = datetime_parser(item[dt_attr])
+            item[dt_attr] = datetime_value
 
     def load_item(item):
+        if 'last_modification' in item:
+            last_modification = item.pop('last_modification')
+            if last_modification is None:
+                item['modification'] = item['creation']
+            else:
+                item['modification'] = last_modification
+
         parse_date(item, 'creation')
         parse_date(item, 'modification')
+
         return item
 
     return [load_item(item) for item in json_data]

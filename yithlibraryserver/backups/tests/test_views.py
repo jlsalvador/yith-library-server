@@ -16,8 +16,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
+import datetime
 import gzip
 import json
+import os.path
 
 from freezegun import freeze_time
 
@@ -182,3 +184,65 @@ class ViewTests(TestCase):
         self.assertEqual(2, Session.query(Password).count())
         user = Session.query(User).filter(User.id==user_id).one()
         self.assertEqual(len(user.passwords), 2)
+
+    def test_backups_import_backup_version_0_2(self):
+        user_id = create_and_login_user(self.testapp)
+        here = os.path.dirname(os.path.abspath(__file__))
+        backup_filename = 'sample_v_0_2.yith'
+        backup_filepath = os.path.join(here, backup_filename)
+        data = open(backup_filepath, 'rb').read()
+        res = self.testapp.post(
+            '/backup/import', {},
+            upload_files=[('passwords-file', backup_filename, data)],
+            status=302)
+        self.assertEqual(res.status, '302 Found')
+        self.assertEqual(res.location, 'http://localhost/backup')
+        self.assertEqual(2, Session.query(Password).count())
+        user = Session.query(User).filter(User.id==user_id).one()
+        self.assertEqual(len(user.passwords), 2)
+        password1 = user.passwords[0]
+        password2 = user.passwords[1]
+
+        self.assertEqual(
+            password1.creation,
+            datetime.datetime(2015, 6, 23, 18, 58, 24, 102000)
+        )
+        self.assertEqual(
+            password1.modification,
+            datetime.datetime(2015, 6, 23, 18, 58, 24, 102000)
+        )
+        self.assertEqual(password1.service, 'service1.example.com')
+        self.assertEqual(password1.notes, 'example notes')
+        self.assertEqual(password1.tags, ['tag1'])
+        self.assertEqual(password1.account, 'foo')
+        self.assertEqual(password1.expiration, 2)
+        self.assertEqual(
+            password1.secret,
+            '{"iv":"CdYxmui0B/te1uCa8pDV5Q==","v":1,"iter":1000,"ks":128,'
+            '"ts":64,"mode":"ccm","adata":"","cipher":"aes",'
+            '"salt":"SvbgVP7609c=","ct":"K2yT6L9gicAXTPc="}',
+        )
+        self.assertEqual(password1.user_id, user_id)
+
+        password2 = user.passwords[1]
+
+        self.assertEqual(
+            password2.creation,
+            datetime.datetime(2015, 6, 23, 18, 59, 3, 597000)
+        )
+        self.assertEqual(
+            password2.modification,
+            datetime.datetime(2015, 6, 23, 18, 59, 3, 597000)
+        )
+        self.assertEqual(password2.service, 'service2.example.com')
+        self.assertEqual(password2.notes, '')
+        self.assertEqual(password2.tags, [])
+        self.assertEqual(password2.account, 'foo2')
+        self.assertEqual(password2.expiration, 0)
+        self.assertEqual(
+            password2.secret,
+            '{"iv":"bLUri+9VlftqhlWdvLHGxQ==","v":1,"iter":1000,"ks":128,'
+            '"ts":64,"mode":"ccm","adata":"","cipher":"aes",'
+            '"salt":"SvbgVP7609c=","ct":"VMUleXMMjUBbKAcD"}'
+        )
+        self.assertEqual(password2.user_id, user_id)
