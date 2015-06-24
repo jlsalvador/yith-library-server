@@ -205,11 +205,11 @@ class ViewTests(TestCase):
 
         self.assertEqual(
             password1.creation,
-            datetime.datetime(2015, 6, 23, 18, 58, 24, 102000)
+            datetime.datetime(2015, 6, 24, 1, 58, 24, 102000)
         )
         self.assertEqual(
             password1.modification,
-            datetime.datetime(2015, 6, 23, 18, 58, 24, 102000)
+            datetime.datetime(2015, 6, 24, 1, 58, 24, 102000)
         )
         self.assertEqual(password1.service, 'service1.example.com')
         self.assertEqual(password1.notes, 'example notes')
@@ -228,11 +228,11 @@ class ViewTests(TestCase):
 
         self.assertEqual(
             password2.creation,
-            datetime.datetime(2015, 6, 23, 18, 59, 3, 597000)
+            datetime.datetime(2015, 6, 24, 1, 59, 3, 597000)
         )
         self.assertEqual(
             password2.modification,
-            datetime.datetime(2015, 6, 23, 18, 59, 3, 597000)
+            datetime.datetime(2015, 6, 24, 1, 59, 3, 597000)
         )
         self.assertEqual(password2.service, 'service2.example.com')
         self.assertEqual(password2.notes, '')

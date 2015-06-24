@@ -56,7 +56,7 @@ def uncompress(compressed_data):
         if dt_attr in item:
             value = item[dt_attr]
             if isinstance(value, numbers.Integral):
-                datetime_value = datetime.datetime.fromtimestamp(value / 1000.0)
+                datetime_value = datetime.datetime.utcfromtimestamp(value / 1000.0)
             else:
                 datetime_value = datetime_parser(item[dt_attr])
             item[dt_attr] = datetime_value
