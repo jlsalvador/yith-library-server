@@ -243,7 +243,7 @@ class RequestValidator(oauthlib.oauth2.RequestValidator):
             code=token['access_token'],
             code_type=token['token_type'],
             expiration=expiration,
-            refresh_code=token['refresh_token'],
+            refresh_code=token.get('refresh_token', ''),
             user=request.user,
             scope=request.scopes,
             application=request.client,
