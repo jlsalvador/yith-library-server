@@ -20,19 +20,22 @@
 
 import os
 
-from newrelic import agent
-agent.initialize()
+#from newrelic import agent
+#agent.initialize()
 
-from paste.deploy import loadapp
-from pyramid.paster import setup_logging
-from raven.middleware import Sentry
+#from paste.deploy import loadapp
+#from pyramid.paster import setup_logging
+#from raven.middleware import Sentry
 from waitress import serve
+
+def application(environ, start_response):
+    start_response('301 Moved Permanently', [('Location','https://www.yithlibrary.com')])
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     scheme = os.environ.get("SCHEME", "https")
-    setup_logging('yithlibraryserver/config-templates/production.ini')
-    app = loadapp('config:production.ini', relative_to='yithlibraryserver/config-templates')
-    app = Sentry(app)
-    app = agent.WSGIApplicationWrapper(app)
-    serve(app, host='0.0.0.0', port=port, url_scheme=scheme)
+    #setup_logging('yithlibraryserver/config-templates/production.ini')
+    #app = loadapp('config:production.ini', relative_to='yithlibraryserver/config-templates')
+    #app = Sentry(app)
+    #app = agent.WSGIApplicationWrapper(app)
+    serve(application, host='0.0.0.0', port=port, url_scheme=scheme)
