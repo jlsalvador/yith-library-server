@@ -30,6 +30,7 @@ from waitress import serve
 
 def application(environ, start_response):
     start_response('301 Moved Permanently', [('Location','https://www.yithlibrary.com')])
+    return ['']
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
