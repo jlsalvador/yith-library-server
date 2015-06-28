@@ -70,10 +70,6 @@
 	    </div>
 
         <div id="messages" class="container">
-          <div class="alert alert-warning" role="alert">
-            This is a beta version of Yith Library intended for testing purposes only. Everything saved in this instance will be lost since its database will be reset in the future. The current production instance is located at <a href="https://yithlibrary.herokuapp.com">https://yithlibrary.herokuapp.com</a>
-          </div>
-
           <div tal:repeat="queue (('info', 'info'), ('success', 'success'), ('error', 'danger'), ('warning', 'warning'), ('', ''))" tal:omit-tag="">
             <div class="alert alert-${queue[1]} alert-dismissible"
                  role="alert"
