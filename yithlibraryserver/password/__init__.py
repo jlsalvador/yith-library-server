@@ -1,7 +1,7 @@
 # Yith Library Server is a password storage server.
 # Copyright (C) 2012-2013 Yaco Sistemas
 # Copyright (C) 2012-2013 Alejandro Blanco Escudero <alejandro.b.e@gmail.com>
-# Copyright (C) 2012-2013 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
+# Copyright (C) 2012-2015 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
 #
 # This file is part of Yith Library Server.
 #
@@ -18,7 +18,15 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+
+from yithlibraryserver.password.models import Password
+
+logger = logging.getLogger(__name__)
+
 
 def includeme(config):
     config.add_route('password_collection_view', '/passwords')
     config.add_route('password_view', '/passwords/{password}')
+
+    logger.debug('Importing %s model so SQLAlchemy knows about it', Password)

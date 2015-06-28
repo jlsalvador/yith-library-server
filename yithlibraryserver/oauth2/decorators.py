@@ -1,5 +1,5 @@
 # Yith Library Server is a password storage server.
-# Copyright (C) 2014 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
+# Copyright (C) 2014-2015 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
 #
 # This file is part of Yith Library Server.
 #

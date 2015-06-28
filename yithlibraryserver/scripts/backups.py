@@ -18,28 +18,32 @@
 
 import datetime
 
+from pyramid_sqlalchemy import Session
+
+from sqlalchemy import extract
 import transaction
 
 from yithlibraryserver.backups.email import send_passwords
 from yithlibraryserver.compat import urlparse
 from yithlibraryserver.scripts.utils import safe_print, setup_simple_command
 from yithlibraryserver.scripts.utils import get_user_display_name
+from yithlibraryserver.user.models import User
 
 
-def get_all_users(db, when):
+def get_all_users(when):
     hour = when.hour
-    return db.users.find({
-        'send_passwords_periodically': True,
-        'email_verified': True,
-        '$where': 'this.date_joined.getUTCHours() === %d' % hour,
-    }).sort('date_joined')
+    return Session.query(User).filter(
+        User.send_passwords_periodically==True,
+        User.email_verified==True,
+        extract('hour', User.creation)==hour,
+    ).order_by(User.creation)
 
 
-def get_selected_users(db, *emails):
+def get_selected_users(*emails):
     for email in emails:
-        for user in db.users.find({
-                'email': email,
-        }).sort('date_joined'):
+        for user in Session.query(User).filter(
+                User.email==email
+        ).order_by(User.creation):
             yield user
 
 
@@ -59,11 +63,11 @@ def send_backups_via_email():
         if len(args) == 0:
             now = datetime.datetime.utcnow()
             if now.day == 1:
-                user_iterator = get_all_users(request.db, now)
+                user_iterator = get_all_users(now)
             else:
                 user_iterator = tuple()
         else:
-            user_iterator = get_selected_users(request.db, *args)
+            user_iterator = get_selected_users(*args)
 
         tx = transaction.begin()
 
@@ -76,7 +80,7 @@ def send_backups_via_email():
             request.route_path('backups_index'))
 
         for user in user_iterator:
-            if user['email']:
+            if user.email:
                 sent = send_passwords(request, user,
                                       preferences_link, backups_link)
                 if sent:

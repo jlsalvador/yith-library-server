@@ -18,10 +18,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
-import datetime
-
-from bson.tz_util import utc
-
 from deform import Button, Form, ValidationFailure
 
 from pyramid.httpexceptions import HTTPBadRequest, HTTPFound
@@ -29,19 +25,20 @@ from pyramid.i18n import get_localizer
 from pyramid.security import remember, forget
 from pyramid.view import view_config, view_defaults, forbidden_view_config
 
+from pyramid_sqlalchemy import Session
+
 from yithlibraryserver.compat import url_quote
 from yithlibraryserver.i18n import translation_domain
 from yithlibraryserver.i18n import TranslationString as _
 from yithlibraryserver.oauth2.decorators import protected_method
-from yithlibraryserver.password.models import PasswordsManager
 from yithlibraryserver.user import analytics
-from yithlibraryserver.user.accounts import get_accounts, merge_accounts
+from yithlibraryserver.user.accounts import merge_accounts
 from yithlibraryserver.user.accounts import notify_admins_of_account_removal
 from yithlibraryserver.user.email_verification import EmailVerificationCode
+from yithlibraryserver.user.models import User
 from yithlibraryserver.user.schemas import UserSchema, NewUserSchema
 from yithlibraryserver.user.schemas import AccountDestroySchema
 from yithlibraryserver.user.schemas import UserPreferencesSchema
-from yithlibraryserver.user.utils import delete_user
 
 
 @view_config(route_name='login', renderer='templates/login.pt')
@@ -94,27 +91,18 @@ def register_new_user(request):
                 'next_url': next_url,
             }
 
-        provider = user_info['provider']
-        provider_key = provider + '_id'
-
         email = appstruct['email']
         if email != '' and email == user_info['email']:
             email_verified = True
         else:
             email_verified = False
 
-        now = datetime.datetime.now(tz=utc)
-
         user_attrs = {
-            provider_key: user_info[provider_key],
             'screen_name': appstruct['screen_name'],
             'first_name': appstruct['first_name'],
             'last_name': appstruct['last_name'],
             'email': email,
             'email_verified': email_verified,
-            'date_joined': now,
-            'last_login': now,
-            'send_passwords_periodically': False,
         }
 
         if request.google_analytics.is_in_session():
@@ -122,22 +110,27 @@ def register_new_user(request):
             user_attrs[analytics.USER_ATTR] = allow_analytics
             request.google_analytics.clean_session()
 
-        _id = request.db.users.insert(user_attrs)
+        user = User(**user_attrs)
+        provider = user_info['provider']
+        external_id = user_info['external_id']
+        user.add_identity(provider, external_id)
+        Session.add(user)
 
         if not email_verified and email != '':
             evc = EmailVerificationCode()
-            user = request.db.users.find_one({'_id': _id})
-            if evc.store(request.db, user):
-                link = request.route_url('user_verify_email')
-                evc.send(request, user, link)
+            user.email_verification_code = evc.code
+            link = request.route_url('user_verify_email')
+            evc.send(request, user, link)
 
         del request.session['user_info']
         if 'next_url' in request.session:
             del request.session['next_url']
 
+        Session.flush()
+
         request.session['current_provider'] = provider
         return HTTPFound(location=next_url,
-                         headers=remember(request, str(_id)))
+                         headers=remember(request, str(user.id)))
     elif 'cancel' in request.POST:
         del request.session['user_info']
         if 'next_url' in request.session:
@@ -185,12 +178,23 @@ def destroy(request):
 
     form = Form(schema, buttons=(button1, button2))
 
-    passwords_manager = PasswordsManager(request.db)
+    user = request.user
+
+    can_destroy = len(user.applications) == 0
+
     context = {
-        'passwords': passwords_manager.retrieve(request.user).count(),
+        'passwords': len(user.passwords),
+        'can_destroy': can_destroy,
     }
 
     if 'submit' in request.POST:
+
+        if not can_destroy:
+            request.session.flash(
+                _('You must remove your applications before destroying your account'),
+                'error',
+            )
+            return HTTPFound(location=request.route_path('oauth2_developer_applications'))
 
         controls = request.POST.items()
         try:
@@ -200,11 +204,9 @@ def destroy(request):
             return context
 
         reason = appstruct['reason']
-        notify_admins_of_account_removal(request, request.user, reason)
+        notify_admins_of_account_removal(request, user, reason)
 
-        passwords_manager.delete(request.user)
-        # TODO: remove user's applications
-        delete_user(request.db, request.user)
+        Session.delete(user)
 
         request.session.flash(
             _('Your account has been removed. Have a nice day!'),
@@ -233,6 +235,8 @@ def user_information(request):
 
     form = Form(schema, buttons=(button1, ))
 
+    user = request.user
+
     if 'submit' in request.POST:
 
         controls = request.POST.items()
@@ -247,34 +251,24 @@ def user_information(request):
             'screen_name': appstruct['screen_name'],
             'email': appstruct['email']['email'],
         }
+        user.update_user_info(changes)
 
-        if request.user['email'] != appstruct['email']['email']:
-            changes['email_verified'] = False
+        Session.add(user)
 
-        result = request.db.users.update({'_id': request.user['_id']},
-                                         {'$set': changes})
-
-        if result['n'] == 1:
-            request.session.flash(
-                _('The changes were saved successfully'),
-                'success',
-            )
-            return HTTPFound(location=request.route_path('user_information'))
-        else:
-            request.session.flash(
-                _('There were an error while saving your changes'),
-                'error',
-            )
-            return {'form': appstruct}
+        request.session.flash(
+            _('The changes were saved successfully'),
+            'success',
+        )
+        return HTTPFound(location=request.route_path('user_information'))
 
     return {
         'form': form.render({
-            'first_name': request.user['first_name'],
-            'last_name': request.user['last_name'],
-            'screen_name': request.user['screen_name'],
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'screen_name': user.screen_name,
             'email': {
-                'email': request.user['email'],
-                'email_verified': request.user['email_verified'],
+                'email': user.email,
+                'email_verified': user.email_verified,
             },
         }),
     }
@@ -290,6 +284,8 @@ def preferences(request):
 
     form = Form(schema, buttons=(button1, ))
 
+    user = request.user
+
     if 'submit' in request.POST:
         controls = request.POST.items()
         try:
@@ -297,28 +293,21 @@ def preferences(request):
         except ValidationFailure as e:
             return {'form': e.render()}
 
-        changes = dict([(pref, appstruct[pref]) for pref in (
-            analytics.USER_ATTR,
-            'send_passwords_periodically',
-        )])
+        user.update_preferences(appstruct)
+        Session.add(user)
 
-        result = request.db.users.update({'_id': request.user['_id']},
-                                         {'$set': changes})
+        request.session.flash(
+            _('The changes were saved successfully'),
+            'success',
+        )
+        return HTTPFound(location=request.route_path('user_preferences'))
 
-        if result['n'] == 1:
-            request.session.flash(
-                _('The changes were saved successfully'),
-                'success',
-            )
-            return HTTPFound(location=request.route_path('user_preferences'))
-        else:
-            request.session.flash(
-                _('There were an error while saving your changes'),
-                'error',
-            )
-            return {'form': appstruct}
-
-    return {'form': form.render(request.user)}
+    return {
+        'form': form.render({
+            'allow_google_analytics': user.allow_google_analytics,
+            'send_passwords_periodically': user.send_passwords_periodically,
+        })
+    }
 
 
 @view_config(route_name='user_identity_providers',
@@ -326,7 +315,7 @@ def preferences(request):
              permission='edit-profile')
 def identity_providers(request):
     current_provider = request.session.get('current_provider', None)
-    accounts = get_accounts(request.db, request.user, current_provider)
+    accounts = request.user.get_accounts(current_provider)
     context = {
         'accounts': accounts
     }
@@ -351,8 +340,7 @@ def identity_providers(request):
                              if is_verified(account)]
 
         if len(accounts_to_merge) > 1:
-            merged = merge_accounts(request.db, request.user,
-                                    accounts_to_merge)
+            merged = merge_accounts(request.user, accounts_to_merge)
             localizer = get_localizer(request)
             msg = localizer.pluralize(
                 _('Congratulations, ${n_merged} of your accounts has been merged into the current one'),
@@ -378,7 +366,8 @@ def identity_providers(request):
              renderer='json',
              permission='edit-profile')
 def send_email_verification_code(request):
-    if not request.user['email']:
+    user = request.user
+    if not user.email:
         return {
             'status': 'bad',
             'error': 'You have not an email in your profile',
@@ -386,15 +375,10 @@ def send_email_verification_code(request):
 
     if 'submit' in request.POST:
         evc = EmailVerificationCode()
-        if evc.store(request.db, request.user):
-            link = request.route_url('user_verify_email')
-            evc.send(request, request.user, link)
-            return {'status': 'ok', 'error': None}
-        else:
-            return {
-                'status': 'bad',
-                'error': 'There were problems storing the verification code',
-            }
+        user.email_verification_code = evc.code
+        link = request.route_url('user_verify_email')
+        evc.send(request, request.user, link)
+        return {'status': 'ok', 'error': None}
     else:
         return {'status': 'bad', 'error': 'Not a post'}
 
@@ -413,12 +397,14 @@ def verify_email(request):
         return HTTPBadRequest('Missing email parameter')
 
     evc = EmailVerificationCode(code)
-    if evc.verify(request.db, email):
+    user = evc.verify(email)
+    if user is not None:
         request.session.flash(
             _('Congratulations, your email has been successfully verified'),
             'success',
         )
-        evc.remove(request.db, email, True)
+        user.verify_email()
+        Session.add(user)
         return {
             'verified': True,
         }
@@ -444,9 +430,8 @@ def google_analytics_preference(request):
     if request.user is None:
         request.session[analytics.USER_ATTR] = allow
     else:
-        changes = request.google_analytics.get_user_attr(allow)
-        request.db.users.update({'_id': request.user['_id']},
-                                {'$set': changes})
+        request.user.allow_google_analytics = allow
+        Session.add(request.user)
 
     return {'allow': allow}
 
@@ -468,4 +453,4 @@ class UserRESTView(object):
     @view_config(request_method='GET')
     @protected_method(['read-userinfo'])
     def get(self):
-        return self.request.user
+        return self.request.user.as_dict()

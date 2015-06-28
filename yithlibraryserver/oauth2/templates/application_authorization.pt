@@ -30,7 +30,7 @@
 		  <li tal:repeat="scope_name scopes">${scope_name}</li>
 		</ul>
 	      </dd>
-	      
+
 	      <dt i18n:translate="">Site:</dt>
 	      <dd><a href="${app.main_url}">${app.main_url}</a></dd>
 
@@ -40,7 +40,7 @@
 	      <dt tal:condition="authorship_information" i18n:translate="">Author:</dt>
 	      <dd tal:condition="authorship_information">${authorship_information}</dd>
             </dl>
-	    
+
 	  </div>
 	  <div class="col-lg-4">
 	    <img tal:condition="app.image_url" src="${app.image_url}" width="200" height="200" alt="" />
@@ -49,7 +49,7 @@
 
       </div>
       <div class="panel-footer">
-	<form method="post" action="${request.route_path('oauth2_authorization_endpoint', app=app._id)}">
+	<form method="post" action="${request.route_path('oauth2_authorization_endpoint', app=app.id)}">
           <input type="hidden" name="response_type" value="${response_type}" />
           <input type="hidden" name="client_id" value="${client_id}" />
           <input type="hidden" name="redirect_uri" value="${redirect_uri}" />
@@ -65,7 +65,7 @@
       </div>
     </div>
   </div>
-  
+
 </tal:block>
 
 </html>

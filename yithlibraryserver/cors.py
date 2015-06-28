@@ -20,6 +20,12 @@
 
 import logging
 
+from pyramid_sqlalchemy import Session
+
+from sqlalchemy.orm.exc import NoResultFound
+
+from yithlibraryserver.oauth2.models import Application
+
 log = logging.getLogger(__name__)
 
 
@@ -48,8 +54,10 @@ class CORSManager(object):
                           (origin, ' '.join(allowed_origins)))
 
     def _get_allowed_origins_for_client(self, request, client_id):
-        app = request.db.applications.find_one({'client_id': client_id})
-        if app is None:
+        try:
+            app = Session.query(Application).filter(
+                Application.id==client_id
+            ).one()
+            return app.authorized_origins
+        except NoResultFound:
             return []
-        else:
-            return app['authorized_origins']

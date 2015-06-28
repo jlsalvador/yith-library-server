@@ -1,4 +1,4 @@
-Hi ${firstname}
+Hi ${first_name}
 
 Thanks a lot for donating $${amount} to Yith Library.
 

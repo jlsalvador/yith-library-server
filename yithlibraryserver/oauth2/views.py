@@ -1,7 +1,7 @@
 # Yith Library Server is a password storage server.
 # Copyright (C) 2012-2013 Yaco Sistemas
 # Copyright (C) 2012-2013 Alejandro Blanco Escudero <alejandro.b.e@gmail.com>
-# Copyright (C) 2012-2013 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
+# Copyright (C) 2012-2015 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
 #
 # This file is part of Yith Library Server.
 #
@@ -18,7 +18,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
-import bson
+import uuid
+
 from deform import Button, Form, ValidationFailure
 
 from pyramid.httpexceptions import (
@@ -29,6 +30,9 @@ from pyramid.httpexceptions import (
 from pyramid.httpexceptions import HTTPUnauthorized
 from pyramid.view import view_config
 
+from pyramid_sqlalchemy import Session
+from sqlalchemy.orm.exc import NoResultFound
+
 from oauthlib.oauth2 import (
     AccessDeniedError,
     FatalClientError,
@@ -37,8 +41,10 @@ from oauthlib.oauth2 import (
 )
 
 from yithlibraryserver.i18n import TranslationString as _
-from yithlibraryserver.oauth2.application import create_client_id_and_secret
-from yithlibraryserver.oauth2.authorization import Authorizator
+from yithlibraryserver.oauth2.models import (
+    Application,
+    AuthorizedApplication,
+)
 from yithlibraryserver.oauth2.schemas import ApplicationSchema
 from yithlibraryserver.oauth2.schemas import FullApplicationSchema
 from yithlibraryserver.oauth2.utils import (
@@ -55,9 +61,8 @@ from yithlibraryserver.user.security import assert_authenticated_user_is_registe
              permission='view-applications')
 def developer_applications(request):
     assert_authenticated_user_is_registered(request)
-    owned_apps_filter = {'owner': request.user['_id']}
     return {
-        'applications': request.db.applications.find(owned_apps_filter)
+        'applications': request.user.applications,
     }
 
 
@@ -81,24 +86,24 @@ def developer_application_new(request):
             return {'form': e.render()}
 
         # the data is fine, save into the db
-        application = {
-            'owner': request.user['_id'],
-            'name': appstruct['name'],
-            'main_url': appstruct['main_url'],
-            'callback_url': appstruct['callback_url'],
-            'authorized_origins': appstruct['authorized_origins'],
-            'production_ready': appstruct['production_ready'],
-            'image_url': appstruct['image_url'],
-            'description': appstruct['description'],
-        }
-        create_client_id_and_secret(application)
+        application = Application(
+            name=appstruct['name'],
+            main_url=appstruct['main_url'],
+            callback_url=appstruct['callback_url'],
+            authorized_origins=appstruct['authorized_origins'],
+            production_ready=appstruct['production_ready'],
+            image_url=appstruct['image_url'],
+            description=appstruct['description'],
+        )
+        request.user.applications.append(application)
 
         request.session.flash(
             _('The application ${app} was created successfully',
               mapping={'app': appstruct['name']}),
             'success')
 
-        request.db.applications.insert(application)
+        Session.add(request.user)
+
         return HTTPFound(
             location=request.route_path('oauth2_developer_applications'))
     elif 'cancel' in request.POST:
@@ -113,18 +118,21 @@ def developer_application_new(request):
              renderer='templates/developer_application_edit.pt',
              permission='edit-application')
 def developer_application_edit(request):
+    app_id = request.matchdict['app']
+
     try:
-        app_id = bson.ObjectId(request.matchdict['app'])
-    except bson.errors.InvalidId:
-        return HTTPBadRequest(body='Invalid application id')
+        uuid.UUID(app_id)
+    except ValueError:
+        return HTTPBadRequest()
+
+    try:
+        app = Session.query(Application).filter(Application.id==app_id).one()
+    except NoResultFound:
+        return HTTPNotFound()
 
     assert_authenticated_user_is_registered(request)
 
-    app = request.db.applications.find_one(app_id)
-    if app is None:
-        return HTTPNotFound()
-
-    if app['owner'] != request.user['_id']:
+    if app.user != request.user:
         return HTTPUnauthorized()
 
     schema = FullApplicationSchema()
@@ -144,21 +152,15 @@ def developer_application_edit(request):
             return {'form': e.render(), 'app': app}
 
         # the data is fine, save into the db
-        application = {
-            'owner': request.user['_id'],
-            'name': appstruct['name'],
-            'main_url': appstruct['main_url'],
-            'callback_url': appstruct['callback_url'],
-            'authorized_origins': appstruct['authorized_origins'],
-            'production_ready': appstruct['production_ready'],
-            'image_url': appstruct['image_url'],
-            'description': appstruct['description'],
-            'client_id': app['client_id'],
-            'client_secret': app['client_secret'],
-        }
+        app.name =  appstruct['name']
+        app.main_url = appstruct['main_url']
+        app.callback_url = appstruct['callback_url']
+        app.authorized_origins = appstruct['authorized_origins']
+        app.production_ready = appstruct['production_ready']
+        app.image_url = appstruct['image_url']
+        app.description = appstruct['description']
 
-        request.db.applications.update({'_id': app['_id']},
-                                       application)
+        Session.add(app)
 
         request.session.flash(_('The changes were saved successfully'),
                               'success')
@@ -168,37 +170,53 @@ def developer_application_edit(request):
     elif 'delete' in request.POST:
         return HTTPFound(
             location=request.route_path('oauth2_developer_application_delete',
-                                        app=app['_id']))
+                                        app=app.id))
     elif 'cancel' in request.POST:
         return HTTPFound(
             location=request.route_path('oauth2_developer_applications'))
 
     # this is a GET
-    return {'form': form.render(app), 'app': app}
+    return {
+        'form': form.render({
+            'name': app.name,
+            'main_url': app.main_url,
+            'callback_url': app.callback_url,
+            'authorized_origins': app.authorized_origins,
+            'production_ready': app.production_ready,
+            'image_url': app.image_url,
+            'description': app.description,
+            'client_id': app.id,
+            'client_secret': app.secret,
+        }),
+        'app': app,
+    }
 
 
 @view_config(route_name='oauth2_developer_application_delete',
              renderer='templates/developer_application_delete.pt',
              permission='delete-application')
 def developer_application_delete(request):
-    try:
-        app_id = bson.ObjectId(request.matchdict['app'])
-    except bson.errors.InvalidId:
-        return HTTPBadRequest(body='Invalid application id')
+    app_id = request.matchdict['app']
 
-    app = request.db.applications.find_one(app_id)
-    if app is None:
+    try:
+        uuid.UUID(app_id)
+    except ValueError:
+        return HTTPBadRequest()
+
+    try:
+        app = Session.query(Application).filter(Application.id==app_id).one()
+    except NoResultFound:
         return HTTPNotFound()
 
     assert_authenticated_user_is_registered(request)
-    if app['owner'] != request.user['_id']:
+    if app.user != request.user:
         return HTTPUnauthorized()
 
     if 'submit' in request.POST:
-        request.db.applications.remove(app_id)
+        Session.delete(app)
         request.session.flash(
             _('The application ${app} was deleted successfully',
-              mapping={'app': app['name']}),
+              mapping={'app': app.name}),
             'success',
         )
         return HTTPFound(
@@ -211,9 +229,8 @@ class AuthorizationEndpoint(object):
 
     def __init__(self, request):
         self.request = request
-        self.validator = RequestValidator(request.db)
+        self.validator = RequestValidator()
         self.server = Server(self.validator)
-        self.authorizator = Authorizator(request.db)
 
     @view_config(route_name='oauth2_authorization_endpoint',
                  renderer='templates/application_authorization.pt',
@@ -226,23 +243,28 @@ class AuthorizationEndpoint(object):
             scopes, credentials = self.server.validate_authorization_request(
                 uri, http_method, body, headers,
             )
-            credentials['user'] = self.request.user
 
-            if self.authorizator.is_app_authorized(scopes, credentials):
+            app = self.validator.get_client(credentials['client_id'])
+
+            try:
+                auth_app = Session.query(AuthorizedApplication).filter(
+                    AuthorizedApplication.user==self.request.user,
+                    AuthorizedApplication.scope==scopes,
+                    AuthorizedApplication.redirect_uri==credentials['redirect_uri'],
+                    AuthorizedApplication.response_type==credentials['response_type'],
+                    AuthorizedApplication.application==app,
+                ).one()
+            except NoResultFound:
+                auth_app = None
+
+            if auth_app is not None:
+                credentials['user'] = self.request.user
                 server_response = self.server.create_authorization_response(
                     uri, http_method, body, headers, scopes, credentials,
                 )
                 return create_response(*server_response)
             else:
-                app = self.validator.get_client(credentials['client_id'])
-                authorship_information = ''
-                owner_id = app._client.get('owner', None)
-                if owner_id is not None:
-                    owner = self.request.db.users.find_one({'_id': owner_id})
-                    if owner:
-                        email = owner.get('email', None)
-                        if email:
-                            authorship_information = email
+                authorship_information = app.user.email
 
                 pretty_scopes = self.validator.get_pretty_scopes(scopes)
                 return {
@@ -251,7 +273,7 @@ class AuthorizationEndpoint(object):
                     'redirect_uri': credentials['redirect_uri'],
                     'state': credentials['state'],
                     'scope': ' '.join(scopes),
-                    'app': app._client,
+                    'app': app,
                     'scopes': pretty_scopes,
                     'authorship_information': authorship_information,
                 }
@@ -282,7 +304,28 @@ class AuthorizationEndpoint(object):
                 server_response = self.server.create_authorization_response(
                     uri, http_method, body, headers, scopes, credentials,
                 )
-                self.authorizator.store_user_authorization(scopes, credentials)
+
+                app = Session.query(Application).filter(
+                    Application.id==credentials['client_id'],
+                ).one()
+
+                try:
+                    auth_app = Session.query(AuthorizedApplication).filter(
+                        AuthorizedApplication.user==self.request.user,
+                        AuthorizedApplication.application==app,
+                    ).one()
+                except NoResultFound:
+                    auth_app = AuthorizedApplication(
+                        user=self.request.user,
+                        application=app,
+                    )
+
+                auth_app.redirect_uri = credentials['redirect_uri']
+                auth_app.response_type = credentials['response_type']
+                auth_app.scope = scopes
+
+                Session.add(auth_app)
+
                 return create_response(*server_response)
             except FatalClientError as e:
                 return response_from_error(e)
@@ -295,7 +338,7 @@ class AuthorizationEndpoint(object):
 @view_config(route_name='oauth2_token_endpoint',
              renderer='json')
 def token_endpoint(request):
-    validator = RequestValidator(request.db)
+    validator = RequestValidator()
     server = Server(validator)
 
     uri, http_method, body, headers = extract_params(request)
@@ -310,40 +353,39 @@ def token_endpoint(request):
              permission='view-applications')
 def authorized_applications(request):
     assert_authenticated_user_is_registered(request)
-    authorizator = Authorizator(request.db)
-    authorized_apps = []
-    for authorization in authorizator.get_user_authorizations(request.user):
-        app = request.db.applications.find_one({
-            'client_id': authorization['client_id'],
-        })
-        if app is not None:
-            authorized_apps.append(app)
-    return {'authorized_apps': authorized_apps}
+    return {'authorized_apps': request.user.authorized_applications}
 
 
 @view_config(route_name='oauth2_revoke_application',
              renderer='templates/application_revoke_authorization.pt',
              permission='revoke-authorized-app')
 def revoke_application(request):
-    assert_authenticated_user_is_registered(request)
+    app_id = request.matchdict['app']
 
     try:
-        app_id = bson.ObjectId(request.matchdict['app'])
-    except bson.errors.InvalidId:
-        return HTTPBadRequest(body='Invalid application id')
+        uuid.UUID(app_id)
+    except ValueError:
+        return HTTPBadRequest()
 
-    app = request.db.applications.find_one(app_id)
-    if app is None:
+    try:
+        app = Session.query(Application).filter(Application.id==app_id).one()
+    except NoResultFound:
         return HTTPNotFound()
 
-    authorizator = Authorizator(request.db)
+    assert_authenticated_user_is_registered(request)
 
     if 'submit' in request.POST:
-        authorizator.remove_user_authorization(request.user, app['client_id'])
+
+        authorized_apps = Session.query(AuthorizedApplication).filter(
+            AuthorizedApplication.application==app,
+            AuthorizedApplication.user==request.user
+        ).all()
+        for authorized_app in authorized_apps:
+            Session.delete(authorized_app)
 
         request.session.flash(
             _('The access to application ${app} has been revoked',
-              mapping={'app': app['name']}),
+              mapping={'app': app.name}),
             'success',
         )
         return HTTPFound(
@@ -355,4 +397,5 @@ def revoke_application(request):
 @view_config(route_name='oauth2_clients',
              renderer='templates/clients.pt')
 def clients(request):
-    return {'apps': request.db.applications.find({'production_ready': True})}
+    apps = Session.query(Application).filter(Application.production_ready==True)
+    return {'apps': apps}

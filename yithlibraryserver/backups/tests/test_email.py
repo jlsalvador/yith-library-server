@@ -25,53 +25,85 @@ from pyramid.testing import DummyRequest
 
 from pyramid_mailer import get_mailer
 
-from yithlibraryserver.db import MongoDB
+from pyramid_sqlalchemy import metadata
+from pyramid_sqlalchemy import Session
+
+import transaction
+
 from yithlibraryserver.backups.email import send_passwords
-from yithlibraryserver.testing import MONGO_URI, clean_db
+from yithlibraryserver.password.models import Password
+from yithlibraryserver.testing import (
+    get_test_db_uri,
+    sqlalchemy_setup,
+    sqlalchemy_teardown,
+)
+from yithlibraryserver.user.models import User
 
 
 class SendPasswordsTests(unittest.TestCase):
 
     def setUp(self):
+        self.db_uri = get_test_db_uri()
+        self.db_context = sqlalchemy_setup(self.db_uri)
         self.config = testing.setUp()
         self.config.include('pyramid_mailer.testing')
         self.config.include('pyramid_chameleon')
-        self.db = MongoDB(MONGO_URI).get_database()
+        self.config.include('yithlibraryserver.password')
+        self.config.include('yithlibraryserver.user')
+        metadata.create_all()
 
     def tearDown(self):
         testing.tearDown()
-        clean_db(self.db)
+        sqlalchemy_teardown(self.db_context)
 
-    def test_send_passwords(self):
+    def test_send_passwords_user_has_no_passwords(self):
         preferences_link = 'http://localhost/preferences'
         backups_link = 'http://localhost/backups'
-        user_id = self.db.users.insert({
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': 'john@example.com',
-        })
-        user = self.db.users.find_one({'_id': user_id})
+
+        user = User(first_name='John',
+                    last_name='Doe',
+                    email='john@example.com')
+
+        with transaction.manager:
+            Session.add(user)
+            Session.flush()
+            user_id = user.id
+
+        user = Session.query(User).filter(User.id==user_id).one()
 
         request = DummyRequest()
-        request.db = self.db
         mailer = get_mailer(request)
 
         self.assertFalse(send_passwords(request, user,
                                         preferences_link, backups_link))
         self.assertEqual(len(mailer.outbox), 0)
 
+    def test_send_passwords_user_has_some_passwords(self):
+        preferences_link = 'http://localhost/preferences'
+        backups_link = 'http://localhost/backups'
+
+        user = User(first_name='John',
+                    last_name='Doe',
+                    email='john@example.com')
+
         # add some passwords
-        self.db.passwords.insert({
-            'owner': user_id,
-            'password': 'secret1',
-        })
-        self.db.passwords.insert({
-            'owner': user_id,
-            'password': 'secret2',
-        })
+        password1 = Password(service='testing1',
+                            secret='s3cr3t1',
+                            user=user)
+        password2 = Password(service='testing2',
+                            secret='s3cr3t2',
+                            user=user)
+
+        with transaction.manager:
+            Session.add(user)
+            Session.add(password1)
+            Session.add(password2)
+            Session.flush()
+            user_id = user.id
+
+        user = Session.query(User).filter(User.id==user_id).one()
 
         request = DummyRequest()
-        request.db = self.db
         mailer = get_mailer(request)
 
         with freeze_time('2012-01-10'):

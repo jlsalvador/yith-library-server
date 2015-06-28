@@ -23,47 +23,79 @@ import unittest
 from pyramid import testing
 from pyramid.httpexceptions import HTTPFound
 
-from yithlibraryserver.db import MongoDB
-from yithlibraryserver.testing import MONGO_URI, clean_db
+from pyramid_sqlalchemy import Session
+
+from pyramid_sqlalchemy import metadata
+from yithlibraryserver.testing import (
+    get_test_db_uri,
+    sqlalchemy_setup,
+    sqlalchemy_teardown,
+)
 from yithlibraryserver.user.security import (
     get_user,
     assert_authenticated_user_is_registered,
 )
+from yithlibraryserver.user.models import User
 
 
-class SecurityTests(unittest.TestCase):
+class GetUserTests(unittest.TestCase):
 
     def setUp(self):
+        self.db_uri = get_test_db_uri()
+        self.db_context = sqlalchemy_setup(self.db_uri)
+
         self.config = testing.setUp()
         self.config.include('yithlibraryserver.user')
-        mdb = MongoDB(MONGO_URI)
-        self.db = mdb.get_database()
+
+        metadata.create_all()
 
     def tearDown(self):
         testing.tearDown()
-        clean_db(self.db)
+        sqlalchemy_teardown(self.db_context)
 
-    def test_get_user(self):
+    def test_get_user_no_userid(self):
         request = testing.DummyRequest()
-        request.db = self.db
-
         self.assertEqual(None, get_user(request))
 
-        self.config.testing_securitypolicy(userid='john')
+    def test_get_user_no_user(self):
+        request = testing.DummyRequest()
+        user_id = '00000000-0000-0000-0000-000000000000'
+        self.config.testing_securitypolicy(userid=user_id)
         self.assertEqual(None, get_user(request))
 
-        user_id = self.db.users.insert({'screen_name': 'John Doe'})
-        self.config.testing_securitypolicy(userid=str(user_id))
-        self.assertEqual(get_user(request), {
-            '_id': user_id,
-            'screen_name': 'John Doe',
-        })
+    def test_get_user_existing_user(self):
+        user = User(screen_name='John Doe')
+        Session.add(user)
+        Session.flush()
+        user_id = user.id
 
-    def test_assert_authenticated_user_is_registered(self):
-        self.config.testing_securitypolicy(userid='john')
+        self.config.testing_securitypolicy(userid=user_id)
+        request = testing.DummyRequest()
+        new_user = get_user(request)
+        self.assertEqual(new_user.id, user.id)
+        self.assertEqual(new_user.screen_name, 'John Doe')
+
+
+class AssertAuthenticatedUserIsRegisteredTests(unittest.TestCase):
+
+    def setUp(self):
+        self.db_uri = get_test_db_uri()
+        self.db_context = sqlalchemy_setup(self.db_uri)
+
+        self.config = testing.setUp()
+        self.config.include('yithlibraryserver.user')
+
+        metadata.create_all()
+
+    def tearDown(self):
+        testing.tearDown()
+        sqlalchemy_teardown(self.db_context)
+
+    def test_assert_authenticated_user_is_registered_no_user(self):
+        user_id = '00000000-0000-0000-0000-000000000000'
+        self.config.testing_securitypolicy(userid=user_id)
 
         request = testing.DummyRequest()
-        request.db = self.db
 
         self.assertRaises(HTTPFound, assert_authenticated_user_is_registered, request)
         try:
@@ -71,9 +103,14 @@ class SecurityTests(unittest.TestCase):
         except HTTPFound as exp:
             self.assertEqual(exp.location, '/register')
 
-        user_id = self.db.users.insert({'screen_name': 'John Doe'})
+    def test_assert_authenticated_user_is_registered_existing_user(self):
+        user = User(screen_name='John Doe')
+        Session.add(user)
+        Session.flush()
+        user_id = user.id
 
-        self.config.testing_securitypolicy(userid=str(user_id))
+        self.config.testing_securitypolicy(userid=user_id)
+        request = testing.DummyRequest()
         res = assert_authenticated_user_is_registered(request)
-        self.assertEqual(res['_id'], user_id)
-        self.assertEqual(res['screen_name'], 'John Doe')
+        self.assertEqual(res.id, user_id)
+        self.assertEqual(res.screen_name, 'John Doe')

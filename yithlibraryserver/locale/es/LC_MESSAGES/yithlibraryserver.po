@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: yith-library-server 0.0\n"
 "Report-Msgid-Bugs-To: lorenzo.gil.sanchez@gmail.com\n"
-"POT-Creation-Date: 2015-03-08 21:13-0700\n"
-"PO-Revision-Date: 2015-03-08 21:15-0700\n"
+"POT-Creation-Date: 2015-06-09 22:25-0700\n"
+"PO-Revision-Date: 2015-06-09 22:29-0700\n"
 "Last-Translator: Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>\n"
 "Language-Team: es <LL@li.org>\n"
 "Language: \n"
@@ -25,8 +25,8 @@ msgstr "Enviar mensaje"
 
 #: yithlibraryserver/views.py:46
 #: yithlibraryserver/backups/templates/backups_index.pt:64
-#: yithlibraryserver/user/views.py:79 yithlibraryserver/user/views.py:183
-#: yithlibraryserver/oauth2/views.py:72 yithlibraryserver/oauth2/views.py:135
+#: yithlibraryserver/user/views.py:76 yithlibraryserver/user/views.py:176
+#: yithlibraryserver/oauth2/views.py:77 yithlibraryserver/oauth2/views.py:143
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -48,7 +48,7 @@ msgstr "Email"
 msgid "Message"
 msgstr "Mensaje"
 
-#: yithlibraryserver/contributions/views.py:59
+#: yithlibraryserver/contributions/views.py:61
 msgid ""
 "There was a problem in the confirmation process. Please start the checkout "
 "again"
@@ -56,7 +56,7 @@ msgstr ""
 "Hubo un problema en el proceso de confirmación. Por favor, empieza\n"
 "la compra de nuevo"
 
-#: yithlibraryserver/contributions/views.py:120
+#: yithlibraryserver/contributions/views.py:145
 msgid ""
 "Thanks for considering donating to Yith Library. We will be ready if you "
 "change your mind"
@@ -64,7 +64,7 @@ msgstr ""
 "Gracias por considerar donar dinero a Yith Library. Estaremos listo si\n"
 "cambias de opinión"
 
-#: yithlibraryserver/contributions/views.py:83
+#: yithlibraryserver/contributions/views.py:108
 msgid "Thank you very much for your great contribution"
 msgstr "Muchas gracias por tu gran contribución"
 
@@ -408,21 +408,21 @@ msgstr "Ok, coge mi dinero"
 msgid "No, maybe later"
 msgstr "No, quizás después"
 
-#: yithlibraryserver/backups/views.py:90 yithlibraryserver/backups/views.py:85
+#: yithlibraryserver/backups/views.py:98 yithlibraryserver/backups/views.py:93
 msgid "The passwords file is required to upload the passwords"
 msgstr "El fichero de contraseñas es necesario para subir las contraseñas"
 
-#: yithlibraryserver/backups/views.py:76
+#: yithlibraryserver/backups/views.py:84
 #, python-format
 msgid "Congratulations, ${n_passwords} password has been imported"
 msgstr "Enhorabuena, ${n_passwords} contraseña ha sido importada"
 
-#: yithlibraryserver/backups/views.py:77
+#: yithlibraryserver/backups/views.py:85
 #, python-format
 msgid "Congratulations, ${n_passwords} passwords have been imported"
 msgstr "Enhorabuena, ${n_passwords} contraseñas han sido importadas"
 
-#: yithlibraryserver/backups/views.py:69
+#: yithlibraryserver/backups/views.py:68
 msgid "There was a problem reading your passwords file"
 msgstr "Hubo un problema releyendo su fichero de contraseñas"
 
@@ -502,44 +502,44 @@ msgstr "Esta acción no se puede deshacer."
 msgid "Yes, I am sure"
 msgstr "Sí, estoy seguro"
 
-#: yithlibraryserver/user/views.py:77
+#: yithlibraryserver/user/views.py:74
 msgid "Register into Yith Library"
 msgstr "Registrarme en Yith Library"
 
-#: yithlibraryserver/user/views.py:181
+#: yithlibraryserver/user/views.py:174
 msgid "Yes, I am sure. Destroy my account"
 msgstr "Sí, estoy seguro. Destruye mi cuenta"
 
-#: yithlibraryserver/user/views.py:231 yithlibraryserver/user/views.py:288
+#: yithlibraryserver/user/views.py:233 yithlibraryserver/user/views.py:282
 msgid "Save changes"
 msgstr "Guardar cambios"
 
-#: yithlibraryserver/user/views.py:210
+#: yithlibraryserver/user/views.py:212
 msgid "Your account has been removed. Have a nice day!"
 msgstr "Tu cuenta ha sido eliminada. ¡Que tengas un buen día!"
 
-#: yithlibraryserver/user/views.py:418
-msgid "Congratulations, your email has been successfully verified"
-msgstr "Enhorabuena, tu email ha sido verificado correctamente"
-
-#: yithlibraryserver/user/views.py:427
-msgid "Sorry, your verification code is not correct or has expired"
-msgstr "Lo siento, tu código de verificación no es correcto o ha caducado"
-
-#: yithlibraryserver/user/views.py:217
-msgid "Thanks for reconsidering removing your account!"
-msgstr "¡Gracias por reconsiderar la eliminación de tu cuenta!"
-
-#: yithlibraryserver/user/views.py:259 yithlibraryserver/user/views.py:310
-#: yithlibraryserver/oauth2/views.py:163
+#: yithlibraryserver/user/views.py:259 yithlibraryserver/user/views.py:300
+#: yithlibraryserver/oauth2/views.py:165
 msgid "The changes were saved successfully"
 msgstr "Los cambios fueron guardados correctamente"
 
-#: yithlibraryserver/user/views.py:265 yithlibraryserver/user/views.py:316
-msgid "There were an error while saving your changes"
-msgstr "Hubo un error al guardar tus cambios"
+#: yithlibraryserver/user/views.py:403
+msgid "Congratulations, your email has been successfully verified"
+msgstr "Enhorabuena, tu email ha sido verificado correctamente"
 
-#: yithlibraryserver/user/views.py:358
+#: yithlibraryserver/user/views.py:413
+msgid "Sorry, your verification code is not correct or has expired"
+msgstr "Lo siento, tu código de verificación no es correcto o ha caducado"
+
+#: yithlibraryserver/user/views.py:194
+msgid "You must remove your applications before destroying your account"
+msgstr "Debes eliminar tus aplicaciones antes de destruir tu cuenta"
+
+#: yithlibraryserver/user/views.py:219
+msgid "Thanks for reconsidering removing your account!"
+msgstr "¡Gracias por reconsiderar la eliminación de tu cuenta!"
+
+#: yithlibraryserver/user/views.py:346
 #, python-format
 msgid ""
 "Congratulations, ${n_merged} of your accounts has been merged into the "
@@ -548,7 +548,7 @@ msgstr ""
 "Enhorabuena, ${n_merged} de tus cuentas ha sido mezclada correctamente con\n"
 "la cuenta actual"
 
-#: yithlibraryserver/user/views.py:359
+#: yithlibraryserver/user/views.py:347
 #, python-format
 msgid ""
 "Congratulations, ${n_merged} of your accounts have been merged into the "
@@ -558,7 +558,7 @@ msgstr ""
 "con\n"
 "la cuenta actual"
 
-#: yithlibraryserver/user/views.py:367
+#: yithlibraryserver/user/views.py:355
 msgid "Not enough accounts for merging"
 msgstr "No hay suficientes cuentas para mezclar"
 
@@ -592,7 +592,8 @@ msgstr "Enviar mis contraseñas a mi email mensualmente"
 
 #: yithlibraryserver/user/schemas.py:122
 msgid "You will receive your passwords backup on the first day of the month"
-msgstr "Recibirás la copia de seguridad de tus contraseñas el primer día del mes"
+msgstr ""
+"Recibirás la copia de seguridad de tus contraseñas el primer día del mes"
 
 #: yithlibraryserver/user/idp.py:42
 #, python-format
@@ -611,30 +612,44 @@ msgstr "Preferencias"
 msgid "Destroy account"
 msgstr "Destruir cuenta"
 
+#: yithlibraryserver/user/templates/destroy.pt:18
+msgid "This account can not be destroyed"
+msgstr "Esta cuenta no se puede destruir"
+
 #: yithlibraryserver/user/templates/destroy.pt:19
+msgid ""
+"You can not destroy this account because you are the owner of an "
+"application. Please remove the application first."
+msgstr "No puedes destruir esta cuenta porque eres el dueño de una aplicación. Por favor elminar la aplicación primero."
+
+#: yithlibraryserver/user/templates/destroy.pt:20
+msgid "Go to my appplications"
+msgstr "Ir a mis aplicaciones"
+
+#: yithlibraryserver/user/templates/destroy.pt:25
 msgid "I am tired of using Yith Library"
 msgstr "Estoy cansado de usar Yith Library"
 
-#: yithlibraryserver/user/templates/destroy.pt:20
+#: yithlibraryserver/user/templates/destroy.pt:26
 msgid "We are very sorry to hear that, but hey, it's your decission!"
 msgstr "Sentimos mucho oir eso, pero ¡hey, es tu decisión!"
 
-#: yithlibraryserver/user/templates/destroy.pt:21
+#: yithlibraryserver/user/templates/destroy.pt:27
 msgid "Destroy my account ..."
 msgstr "Destruye mi cuenta ..."
 
-#: yithlibraryserver/user/templates/destroy.pt:25
+#: yithlibraryserver/user/templates/destroy.pt:31
 msgid "Do you really really really want to destroy your account?"
 msgstr "¿De verdad de la buena quieres destruir tu cuenta?"
 
-#: yithlibraryserver/user/templates/destroy.pt:29
+#: yithlibraryserver/user/templates/destroy.pt:35
 msgid ""
 "All your personal information and passwords will be removed from this server."
 msgstr ""
 "Toda tu información personal y contraseñas se eliminarán de este\n"
 "servidor."
 
-#: yithlibraryserver/user/templates/destroy.pt:31
+#: yithlibraryserver/user/templates/destroy.pt:37
 msgid "You will not be able to undo this operation. Think about it."
 msgstr "No podrás deshacer esta operación. Piensa en ello."
 
@@ -1489,25 +1504,25 @@ msgstr ""
 msgid "I couldn't live a week without a private library."
 msgstr "No podía vivir una semana sin una biblioteca privada."
 
-#: yithlibraryserver/oauth2/views.py:70 yithlibraryserver/oauth2/views.py:131
+#: yithlibraryserver/oauth2/views.py:75 yithlibraryserver/oauth2/views.py:139
 msgid "Save application"
 msgstr "Guardar aplicación"
 
-#: yithlibraryserver/oauth2/views.py:133
+#: yithlibraryserver/oauth2/views.py:141
 msgid "Delete application"
 msgstr "Borrar aplicación"
 
-#: yithlibraryserver/oauth2/views.py:97
+#: yithlibraryserver/oauth2/views.py:101
 #, python-format
 msgid "The application ${app} was created successfully"
 msgstr "La aplicación ${app} fue creada correctamente"
 
-#: yithlibraryserver/oauth2/views.py:200
+#: yithlibraryserver/oauth2/views.py:218
 #, python-format
 msgid "The application ${app} was deleted successfully"
 msgstr "La aplicación ${app} fue borrada correctamente"
 
-#: yithlibraryserver/oauth2/views.py:345
+#: yithlibraryserver/oauth2/views.py:387
 #, python-format
 msgid "The access to application ${app} has been revoked"
 msgstr "El acceso a la aplicación ${app} ha sido revocado"
@@ -1702,6 +1717,9 @@ msgstr "No has autorizado ninguna aplicación aún."
 msgid "Start using a client"
 msgstr "Empieza a usar un cliente"
 
-#: yithlibraryserver/oauth2/templates/authorized_applications.pt:31
+#: yithlibraryserver/oauth2/templates/authorized_applications.pt:35
 msgid "Revoke authorization"
 msgstr "Revocar autorización"
+
+#~ msgid "There were an error while saving your changes"
+#~ msgstr "Hubo un error al guardar tus cambios"

@@ -56,8 +56,8 @@
           </ul>
         </div>
 
-	<div class="container" tal:condition="request.google_analytics.enabled and request.google_analytics.first_time">
-	  <div class="alert alert-info">
+	    <div class="container" tal:condition="request.google_analytics.enabled and request.google_analytics.first_time">
+	      <div class="alert alert-info">
             <p>
               <strong tal:condition="not request.user" i18n:translate="">Welcome, new visitor!</strong>
               <strong tal:condition="request.user" i18n:translate="">Welcome <span i18n:name="current-user">${request.user}</span></strong>.
@@ -66,8 +66,8 @@
               <input type="submit" class="btn btn-default" name="yes" value="Ok, I can handle one more cookie" i18n:attributes="value" />
               <input type="submit" class="btn btn-default" name="no" value="No, I don't want to be tracked" i18n:attributes="value" />
             </form>
-	  </div>
-	</div>
+	      </div>
+	    </div>
 
         <div id="messages" class="container">
           <div tal:repeat="queue (('info', 'info'), ('success', 'success'), ('error', 'danger'), ('warning', 'warning'), ('', ''))" tal:omit-tag="">

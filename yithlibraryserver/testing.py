@@ -18,8 +18,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
+import collections
 import unittest
+
+import mock
 
 from webtest import TestApp
 
@@ -29,14 +31,15 @@ from pyramid.security import remember
 from pyramid.settings import asbool
 from pyramid.testing import DummyRequest
 
-from yithlibraryserver import main
+from pyramid_sqlalchemy import init_sqlalchemy
+from pyramid_sqlalchemy import metadata
+from pyramid_sqlalchemy import Session
 
-# On Travis-CI tests are executed in paralllel for every Python
-# version we support. We should not share the test database on
-# each of this test executions
-PY_VERSION = '%d%d' % (sys.version_info[0], sys.version_info[1])
-DB_NAME = 'test-yith-library-%s' % PY_VERSION
-MONGO_URI = 'mongodb://localhost:27017/%s' % DB_NAME
+from sqlalchemy import create_engine
+
+import transaction
+
+from yithlibraryserver import main
 
 
 class FakeRequest(DummyRequest):
@@ -44,20 +47,56 @@ class FakeRequest(DummyRequest):
     def __init__(self, *args, **kwargs):
         super(FakeRequest, self).__init__(*args, **kwargs)
         self.authorization = self.headers.get('Authorization', '').split(' ')
-        if 'db' in kwargs:
-            self.db = kwargs['db']
 
 
-def clean_db(db):
-    for col in db.collection_names(include_system_collections=False):
-        db.drop_collection(col)
+def enable_sql_two_phase_commit_test(config, enable=True):
+    """Fake enable_sql_two_phase_commit function used in the tests."""
+
+
+def includeme_test(config):
+    """Fake includeme function that replaces the real one in the tests."""
+    config.add_directive('enable_sql_two_phase_commit', enable_sql_two_phase_commit_test)
+
+
+SQLAlchemyTestContext = collections.namedtuple('SQLAlchemyTestContext',
+                                               ['engine', 'sqlalchemy_patcher'])
+
+
+def sqlalchemy_setup(db_uri):
+    engine = create_engine(db_uri)
+    init_sqlalchemy(engine)
+
+    sqlalchemy_patcher = mock.patch('pyramid_sqlalchemy.includeme', includeme_test)
+    sqlalchemy_patcher.start()
+
+    return SQLAlchemyTestContext(engine, sqlalchemy_patcher)
+
+
+def sqlalchemy_teardown(context):
+    transaction.abort()
+    Session.remove()
+    metadata.drop_all()
+    Session.configure(bind=None)
+    metadata.bind = None
+    context.engine.dispose()
+    context.sqlalchemy_patcher.stop()
+
+
+def get_test_db_uri():
+    return 'postgresql://postgres@localhost:5432/test_yithlibrary'
 
 
 class TestCase(unittest.TestCase):
 
+    db_uri = get_test_db_uri()
+
     def setUp(self):
+        super(TestCase, self).setUp()
+
+        self.db_context = sqlalchemy_setup(self.db_uri)
+
         settings = {
-            'mongo_uri': MONGO_URI,
+            'database_url': self.db_uri,
             'auth_tk_secret': '123456',
             'twitter_consumer_key': 'key',
             'twitter_consumer_secret': 'secret',
@@ -79,11 +118,13 @@ class TestCase(unittest.TestCase):
         }
         app = main({}, **settings)
         self.testapp = TestApp(app)
-        self.db = app.registry.settings['db_conn'][DB_NAME]
+
+        metadata.create_all()
 
     def tearDown(self):
-        clean_db(self.db)
+        sqlalchemy_teardown(self.db_context)
         self.testapp.reset()
+        super(TestCase, self).tearDown()
 
     def get_session(self, response):
         queryUtility = self.testapp.app.registry.queryUtility

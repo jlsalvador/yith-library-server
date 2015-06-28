@@ -1,4 +1,4 @@
-<p>Hi ${firstname}</p>
+<p>Hi ${first_name}</p>
 
 <p>Thanks a lot for donating $${amount} to Yith Library.</p>
 
@@ -6,7 +6,7 @@
 <p>We will send you the sticker to this address:</p>
 
 <p>${street}</p>
-<p>${zip} ${city}</p>
+<p>${zipcode} ${city}</p>
 <p>${state} ${country}</p>
 </div>
 

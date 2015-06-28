@@ -1,5 +1,5 @@
 # Yith Library Server is a password storage server.
-# Copyright (C) 2012-2013 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
+# Copyright (C) 2012-2015 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
 #
 # This file is part of Yith Library Server.
 #
@@ -23,6 +23,7 @@ from pyramid.testing import DummyRequest
 from yithlibraryserver.user.analytics import GoogleAnalytics
 from yithlibraryserver.user.analytics import get_google_analytics
 from yithlibraryserver.user.analytics import USER_ATTR
+from yithlibraryserver.user.models import User
 
 
 class DummyRegistry(object):
@@ -40,46 +41,52 @@ class GoogleAnalyticsTests(unittest.TestCase):
         ga = GoogleAnalytics(request)
         self.assertTrue(ga.enabled)
 
+    def test_disabled(self):
         request = DummyRequest()
         request.session = {}
         request.registry = DummyRegistry(google_analytics_code=None)
         ga = GoogleAnalytics(request)
         self.assertFalse(ga.enabled)
 
-    def test_first_time(self):
+    def test_first_time_empty_session_no_user(self):
         request = DummyRequest()
         request.session = {}
         request.user = None
         ga = GoogleAnalytics(request)
         self.assertTrue(ga.first_time)
 
+    def test_first_time_true_session_no_user(self):
         request = DummyRequest()
         request.session = {USER_ATTR: True}
         request.user = None
         ga = GoogleAnalytics(request)
         self.assertFalse(ga.first_time)
 
+    def test_first_time_false_session_no_user(self):
         request = DummyRequest()
         request.session = {USER_ATTR: False}
         request.user = None
         ga = GoogleAnalytics(request)
         self.assertFalse(ga.first_time)
 
+    def test_first_time_empty_session_default_user(self):
         request = DummyRequest()
         request.session = {}
-        request.user = {}
+        request.user = User()
+        ga = GoogleAnalytics(request)
+        self.assertEqual(ga.first_time, None)
+
+    def test_first_time_empty_session_true_user(self):
+        request = DummyRequest()
+        request.session = {}
+        request.user = User(allow_google_analytics=True)
         ga = GoogleAnalytics(request)
         self.assertTrue(ga.first_time)
 
+    def test_first_time_empty_session_false_user(self):
         request = DummyRequest()
         request.session = {}
-        request.user = {USER_ATTR: True}
-        ga = GoogleAnalytics(request)
-        self.assertFalse(ga.first_time)
-
-        request = DummyRequest()
-        request.session = {}
-        request.user = {USER_ATTR: False}
+        request.user = User(allow_google_analytics=False)
         ga = GoogleAnalytics(request)
         self.assertFalse(ga.first_time)
 
@@ -102,63 +109,58 @@ class GoogleAnalyticsTests(unittest.TestCase):
     def test_show_in_user(self):
         request = DummyRequest()
         ga = GoogleAnalytics(request)
-        self.assertFalse(ga.show_in_user({}))
 
-        self.assertFalse(ga.show_in_user({USER_ATTR: False}))
+        self.assertFalse(ga.show_in_user(User(allow_google_analytics=False)))
 
-        self.assertTrue(ga.show_in_user({USER_ATTR: True}))
+        self.assertTrue(ga.show_in_user(User(allow_google_analytics=True)))
 
-    def test_is_in_session(self):
+    def test_is_in_session_empty_session(self):
         request = DummyRequest()
         request.session = {}
         ga = GoogleAnalytics(request)
         self.assertFalse(ga.is_in_session())
 
+    def test_is_in_session_true_session(self):
         request = DummyRequest()
         request.session = {USER_ATTR: True}
         ga = GoogleAnalytics(request)
         self.assertTrue(ga.is_in_session())
 
+    def test_is_in_session_false_session(self):
         request = DummyRequest()
         request.session = {USER_ATTR: False}
         ga = GoogleAnalytics(request)
         self.assertTrue(ga.is_in_session())
 
-    def test_is_stored_in_user(self):
-        request = DummyRequest()
-        ga = GoogleAnalytics(request)
-        self.assertFalse(ga.is_stored_in_user({}))
-
-        self.assertTrue(ga.is_stored_in_user({USER_ATTR: True}))
-
-        self.assertTrue(ga.is_stored_in_user({USER_ATTR: False}))
-
-    def test_show(self):
+    def test_show_empty_session_no_user(self):
         request = DummyRequest()
         request.session = {}
         request.user = None
         ga = GoogleAnalytics(request)
         self.assertFalse(ga.show)
 
+    def test_show_true_session_no_user(self):
         request = DummyRequest()
         request.session = {USER_ATTR: True}
         request.user = None
         ga = GoogleAnalytics(request)
         self.assertTrue(ga.show)
 
+    def test_show_empty_session_true_user(self):
         request = DummyRequest()
         request.session = {}
-        request.user = {USER_ATTR: True}
+        request.user = User(allow_google_analytics=True)
         ga = GoogleAnalytics(request)
         self.assertTrue(ga.show)
 
+    def test_show_true_session_false_user(self):
         request = DummyRequest()
         request.session = {USER_ATTR: True}
-        request.user = {USER_ATTR: False}
+        request.user = User(allow_google_analytics=False)
         ga = GoogleAnalytics(request)
         self.assertFalse(ga.show)
 
-    def test_clean_session(self):
+    def test_clean_session_empty_session(self):
         request = DummyRequest()
         request.session = {}
         request.user = None
@@ -166,20 +168,13 @@ class GoogleAnalyticsTests(unittest.TestCase):
         ga.clean_session()
         self.assertEqual(request.session, {})
 
+    def test_clean_session_true_session(self):
         request = DummyRequest()
         request.session = {USER_ATTR: True}
         request.user = None
         ga = GoogleAnalytics(request)
         ga.clean_session()
         self.assertEqual(request.session, {})
-
-    def test_get_user_attr(self):
-        request = DummyRequest()
-        request.session = {}
-        request.user = None
-        ga = GoogleAnalytics(request)
-        self.assertEqual(ga.get_user_attr(True), {USER_ATTR: True})
-        self.assertEqual(ga.get_user_attr(False), {USER_ATTR: False})
 
     def test_get_google_analytics(self):
         request = DummyRequest()

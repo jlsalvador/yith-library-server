@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
-import datetime
 import unittest
 
 from pyramid import testing
@@ -25,42 +24,56 @@ from pyramid_mailer import get_mailer
 
 from yithlibraryserver.contributions.email import send_thankyou_email
 from yithlibraryserver.contributions.email import send_notification_to_admins
+from yithlibraryserver.contributions.models import Donation
+from yithlibraryserver.testing import (
+    FakeRequest,
+    get_test_db_uri,
+    sqlalchemy_setup,
+    sqlalchemy_teardown,
+)
 
 
 class SendEmailTests(unittest.TestCase):
 
     def setUp(self):
+        self.db_uri = get_test_db_uri()
+        self.db_context = sqlalchemy_setup(self.db_uri)
         self.admin_emails = ['admin1@example.com', 'admin2@example.com']
         self.config = testing.setUp(settings={
             'admin_emails': self.admin_emails,
+            'database_url': get_test_db_uri(),
         })
         self.config.include('pyramid_mailer.testing')
         self.config.include('pyramid_chameleon')
+
+        self.config.include('yithlibraryserver.contributions')
+        self.config.include('yithlibraryserver.user')
         self.config.add_route('home', '/')
+
+        self.donation = Donation(
+            amount=10,
+            first_name='John',
+            last_name='Doe',
+            city='Springfield',
+            country='Exampleland',
+            state='Example',
+            street='Main Street 10',
+            zipcode='12345678',
+            email='john@example.com',
+            send_sticker=True,
+        )
 
     def tearDown(self):
         testing.tearDown()
+        sqlalchemy_teardown(self.db_context)
 
     def test_send_thankyou_email(self):
-        request = testing.DummyRequest()
+        request = FakeRequest()
         mailer = get_mailer(request)
 
         self.assertEqual(len(mailer.outbox), 0)
 
-        donation = {
-            'amount': 10,
-            'firstname': 'John',
-            'lastname': 'Doe',
-            'city': 'Springfield',
-            'country': 'Exampleland',
-            'state': 'Example',
-            'street': 'Main Street 10',
-            'zip': '12345678',
-            'email': 'john@example.com',
-            'creation': datetime.datetime.utcnow(),
-            'send_sticker': True,
-        }
-        send_thankyou_email(request, donation)
+        send_thankyou_email(request, self.donation)
 
         self.assertEqual(len(mailer.outbox), 1)
         message = mailer.outbox[0]
@@ -73,21 +86,7 @@ class SendEmailTests(unittest.TestCase):
 
         self.assertEqual(len(mailer.outbox), 0)
 
-        donation = {
-            'amount': 10,
-            'firstname': 'John',
-            'lastname': 'Doe',
-            'city': 'Springfield',
-            'country': 'Exampleland',
-            'state': 'Example',
-            'street': 'Main Street 10',
-            'zip': '12345678',
-            'email': 'john@example.com',
-            'creation': datetime.datetime.utcnow(),
-            'send_sticker': True,
-            'user': None,
-        }
-        send_notification_to_admins(request, donation)
+        send_notification_to_admins(request, self.donation)
 
         self.assertEqual(len(mailer.outbox), 1)
         message = mailer.outbox[0]

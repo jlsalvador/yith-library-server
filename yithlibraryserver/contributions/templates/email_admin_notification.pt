@@ -1,14 +1,14 @@
-<p>The user ${firstname} has donated $${amount}!</p>
+<p>The user ${first_name} has donated $${amount}!</p>
 
 <p>This is the information regarding this donation:</p>
 
 <p><strong>Personal information:</strong></p>
-<p>${firstname} ${lastname}</p>
+<p>${first_name} ${last_name}</p>
 <p>${email}</p>
 
 <p><strong>Address</strong></p>
 <p>${street}</p>
-<p>${zip} ${city}</p>
+<p>${zipcode} ${city}</p>
 <p>${state} ${country}</p>
 
 <p>Should we send a sticker? ${send_sticker}</p>

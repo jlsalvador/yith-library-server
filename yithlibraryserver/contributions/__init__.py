@@ -1,6 +1,5 @@
-
 # Yith Library Server is a password storage server.
-# Copyright (C) 2013 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
+# Copyright (C) 2013-2015 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
 #
 # This file is part of Yith Library Server.
 #
@@ -17,7 +16,12 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+
 from yithlibraryserver import read_setting_from_env
+from yithlibraryserver.contributions.models import Donation
+
+logger = logging.getLogger(__name__)
 
 
 def includeme(config):
@@ -38,3 +42,5 @@ def includeme(config):
                      '/contribute/paypal-success-callback')
     config.add_route('contributions_paypal_cancel_callback',
                      '/contribute/paypal-cancel-callback')
+
+    logger.debug('Importing %s model so SQLAlchemy knows about it', Donation)

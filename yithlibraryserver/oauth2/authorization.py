@@ -26,46 +26,8 @@ from yithlibraryserver.oauth2.utils import extract_params
 from yithlibraryserver.oauth2.validator import RequestValidator
 
 
-class Authorizator(object):
-
-    def __init__(self, db):
-        self.db = db
-
-    def _get_record(self, scopes, credentials):
-        return {
-            'client_id': credentials['client_id'],
-            'user': credentials['user']['_id'],
-            'redirect_uri': credentials['redirect_uri'],
-            'response_type': credentials['response_type'],
-            'scope': ' '.join(scopes),
-        }
-
-    def is_app_authorized(self, scopes, credentials):
-        record = self._get_record(scopes, credentials)
-        return self.db.authorized_apps.find_one(record) is not None
-
-    def store_user_authorization(self, scopes, credentials):
-        record = self._get_record(scopes, credentials)
-        self.db.authorized_apps.remove(record)
-        self.db.authorized_apps.insert(record)
-
-    def get_user_authorizations(self, user):
-        return self.db.authorized_apps.find({'user': user['_id']})
-
-    def remove_user_authorization(self, user, client_id):
-        self.db.authorized_apps.remove({
-            'client_id': client_id,
-            'user': user['_id'],
-        })
-
-    def remove_all_user_authorizations(self, user):
-        self.db.authorized_apps.remove({
-            'user': user['_id'],
-        })
-
-
 def verify_request(request, scopes):
-    validator = RequestValidator(request.db)
+    validator = RequestValidator()
     server = Server(validator)
 
     uri, http_method, body, headers = extract_params(request)
@@ -77,8 +39,4 @@ def verify_request(request, scopes):
     if not valid:
         raise HTTPUnauthorized()
 
-    user = request.db.users.find_one(r.user)
-    if user is None:
-        raise HTTPUnauthorized()
-
-    return user
+    return r.user

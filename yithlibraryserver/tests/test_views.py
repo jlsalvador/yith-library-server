@@ -21,28 +21,23 @@
 from pyramid_mailer import get_mailer
 
 from yithlibraryserver import testing
+from yithlibraryserver.user.tests.test_views import create_and_login_user
 
 
 class ViewTests(testing.TestCase):
 
-    def test_home(self):
+    def test_home_anonymous_user(self):
         res = self.testapp.get('/')
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Start using it today', no='Get your passwords')
 
-        # Log in
-        user_id = self.db.users.insert({
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': 'john@example.com',
-            'email_verified': True,
-        })
-        self.testapp.get('/__login/' + str(user_id))
+    def test_home_login_user(self):
+        create_and_login_user(self.testapp)
         res = self.testapp.get('/')
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Get your passwords', no='Start using it today')
 
-    def test_contact(self):
+    def test_contact_required_fields(self):
         res = self.testapp.get('/contact')
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Name')
@@ -58,6 +53,7 @@ class ViewTests(testing.TestCase):
         res.mustcontain('class="error" id="error-deformField2">Required')
         res.mustcontain('class="error" id="error-deformField3">Required')
 
+    def test_contact_valid_submission(self):
         res = self.testapp.post('/contact', {
             'name': 'John',
             'email': 'john@example.com',
@@ -77,30 +73,23 @@ class ViewTests(testing.TestCase):
         self.assertEqual(mailer.outbox[0].extra_headers,
                          {'Reply-To': 'john@example.com'})
 
-        # if the user is authenticated, prefill the name and
-        # email fields
-        # Log in
-        user_id = self.db.users.insert({
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': 'john@example.com',
-            'email_verified': True,
-        })
-        self.testapp.get('/__login/' + str(user_id))
-
+    def test_contact_prefil_fields_with_logged_user(self):
+        create_and_login_user(self.testapp,
+                              email='john@example.com', email_verified=True)
         res = self.testapp.get('/contact')
         self.assertEqual(res.status, '200 OK')
 
         res.mustcontain('John')
         res.mustcontain('john@example.com')
 
-        # simulate a cancel
+    def test_contact_cancel_submission(self):
         res = self.testapp.post('/contact', {
             'cancel': 'Cancel',
         }, status=302)
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/')
 
+    def test_contact_no_admin_emails(self):
         # remove the admin emails configuration
         self.testapp.app.registry.settings['admin_emails'] = []
 
@@ -115,7 +104,7 @@ class ViewTests(testing.TestCase):
         # check that the email was *not* sent
         res.request.registry = self.testapp.app.registry
         mailer = get_mailer(res.request)
-        self.assertEqual(len(mailer.outbox), 1)
+        self.assertEqual(len(mailer.outbox), 0)
 
     def test_tos(self):
         res = self.testapp.get('/tos')

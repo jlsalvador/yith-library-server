@@ -14,9 +14,9 @@
     <h2 i18n:translate="">Revoke authorization to application <span i18n:name="app-name">${app.name}</span></h2>
   </div>
 
-  <p class="well well-lg" i18n:translate="">Are you sure you want to revoke the authorization to the application <a href="${app.main_url}" i18n:name="app-name">${app.name}</a> with id <span i18n:name="app-id">${app._id}</span>?</p>
+  <p class="well well-lg" i18n:translate="">Are you sure you want to revoke the authorization to the application <a href="${app.main_url}" i18n:name="app-name">${app.name}</a> with id <span i18n:name="app-id">${app.id}</span>?</p>
 
-  <form method="post" action="${request.route_path('oauth2_revoke_application', app=app._id)}">
+  <form method="post" action="${request.route_path('oauth2_revoke_application', app=app.id)}">
     <input class="btn btn-danger" type="submit" name="submit" value="Yes, I am sure" i18n:attributes="value" />
     <a class="btn btn-default" href="${request.route_path('oauth2_authorized_applications')}" i18n:translate="">No, take me back to the application list</a>
   </form>

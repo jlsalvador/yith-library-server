@@ -1,5 +1,5 @@
 # Yith Library Server is a password storage server.
-# Copyright (C) 2012-2013 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
+# Copyright (C) 2012-2015 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
 #
 # This file is part of Yith Library Server.
 #
@@ -22,6 +22,7 @@ from pyramid.testing import DummyRequest
 
 from yithlibraryserver.compat import urlparse
 from yithlibraryserver.user.gravatar import Gravatar
+from yithlibraryserver.user.models import User
 
 
 class GravatarTests(unittest.TestCase):
@@ -38,35 +39,39 @@ class GravatarTests(unittest.TestCase):
         self.assertEqual(urlparse.parse_qs(parts1.query),
                          urlparse.parse_qs(parts2.query))
 
-    def test_get_email(self):
+    def test_get_email_no_user(self):
         request = DummyRequest()
         request.user = None
         gravatar = Gravatar(request, 'http://localhost/default_gravatar.png')
         self.assertEqual(gravatar.get_email(), None)
 
+    def test_get_email_default_user(self):
         request = DummyRequest()
-        request.user = {}
+        request.user = User()
         gravatar = Gravatar(request, 'http://localhost/default_gravatar.png')
         self.assertEqual(gravatar.get_email(), None)
 
+    def test_get_email_empty_email(self):
         request = DummyRequest()
-        request.user = {'email': ''}
+        request.user = User(email='')
         gravatar = Gravatar(request, 'http://localhost/default_gravatar.png')
         self.assertEqual(gravatar.get_email(), None)
 
+    def test_get_email_valid_email(self):
         request = DummyRequest()
-        request.user = {'email': 'john@example.com'}
+        request.user = User(email='john@example.com')
         gravatar = Gravatar(request, 'http://localhost/default_gravatar.png')
         self.assertEqual(gravatar.get_email(), 'john@example.com')
 
-    def test_has_avatar(self):
+    def test_has_avatar_no_user(self):
         request = DummyRequest()
         request.user = None
         gravatar = Gravatar(request, 'http://localhost/default_gravatar.png')
         self.assertFalse(gravatar.has_avatar())
 
+    def test_has_avatar_valid_user(self):
         request = DummyRequest()
-        request.user = {'email': 'john@example.com'}
+        request.user = User(email='john@example.com')
         gravatar = Gravatar(request, 'http://localhost/default_gravatar.png')
         self.assertTrue(gravatar.has_avatar())
 
@@ -78,32 +83,38 @@ class GravatarTests(unittest.TestCase):
         self.assertEqual(gravatar.get_email_hash('JOHN@EXAMPLE.COM'),
                          'd4c74594d841139328695756648b6bd6')
 
-    def test_get_image_url(self):
+    def test_get_image_url_no_user(self):
         request = DummyRequest()
         request.user = None
         gravatar = Gravatar(request, 'http://localhost/default_gravatar.png')
         self.assertEqual(gravatar.get_image_url(),
                          'http://localhost/default_gravatar.png')
 
+    def test_get_image_url_default_user(self):
         request = DummyRequest()
-        request.user = {}
+        request.user = User()
         gravatar = Gravatar(request, 'http://localhost/default_gravatar.png')
         self.assertURLEqual(gravatar.get_image_url(),
                             'http://localhost/default_gravatar.png')
 
+    def test_get_image_url_empty_email(self):
         request = DummyRequest()
-        request.user = {'email': ''}
+        request.user = User(email='')
         gravatar = Gravatar(request, 'http://localhost/default_gravatar.png')
         self.assertURLEqual(gravatar.get_image_url(),
                             'http://localhost/default_gravatar.png')
 
+    def test_get_image_url_valid_email(self):
         request = DummyRequest()
-        request.user = {'email': 'john@example.com'}
+        request.user = User(email='john@example.com')
         gravatar = Gravatar(request, 'http://localhost/default_gravatar.png')
         self.assertURLEqual(
             gravatar.get_image_url(),
             'https://www.gravatar.com/avatar/d4c74594d841139328695756648b6bd6?s=32&d=http%3A%2F%2Flocalhost%2Fdefault_gravatar.png')
 
+    def test_get_image_url_with_size(self):
+        request = DummyRequest()
+        request.user = User(email='john@example.com')
         gravatar = Gravatar(request, 'http://localhost/default_gravatar.png')
         self.assertURLEqual(
             gravatar.get_image_url(100),

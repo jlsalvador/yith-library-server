@@ -20,12 +20,19 @@ import os
 import unittest
 import tempfile
 
-from yithlibraryserver.db import MongoDB
-from yithlibraryserver.testing import MONGO_URI, clean_db
+from pyramid_sqlalchemy import metadata
+from pyramid_sqlalchemy import Session
+
+from yithlibraryserver.password.models import Password
+from yithlibraryserver.testing import (
+    get_test_db_uri,
+    sqlalchemy_setup,
+    sqlalchemy_teardown,
+)
 
 CONFIG = """[app:main]
 use = egg:yith-library-server
-mongo_uri = %s
+database_url = %s
 auth_tk_secret = 123456
 testing = True
 pyramid_mailer.prefix = mail_
@@ -36,29 +43,30 @@ admin_emails = admin1@example.com admin2@example.com
 use = egg:waitress#main
 host = 0.0.0.0
 port = 65432
-""" % MONGO_URI
+""" % get_test_db_uri()
 
 
 class ScriptTests(unittest.TestCase):
 
-    def setUp(self):
-        super(ScriptTests, self).setUp()
+    use_db = True
 
+    def setUp(self):
         fd, self.conf_file_path = tempfile.mkstemp()
         os.write(fd, CONFIG.encode('ascii'))
-        mdb = MongoDB(MONGO_URI)
-        self.db = mdb.get_database()
+        if self.use_db:
+            self.db_uri = get_test_db_uri()
+            self.db_context = sqlalchemy_setup(self.db_uri)
+
+            metadata.create_all()
 
     def tearDown(self):
-        super(ScriptTests, self).tearDown()
         os.unlink(self.conf_file_path)
-        clean_db(self.db)
+        if self.use_db:
+            sqlalchemy_teardown(self.db_context)
 
     def add_passwords(self, user, n):
         for i in range(n):
-            self.db.passwords.insert({
-                'service': 'service-%d' % (i + 1),
-                'secret': 's3cr3t',
-                'owner': user,
-            })
-        return user
+            p = Password(service='service-%d' % (i + 1),
+                         secret='s3cr3t',
+                         user=user)
+            Session.add(p)

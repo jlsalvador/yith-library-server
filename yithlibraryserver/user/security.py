@@ -18,9 +18,11 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
-import bson
-
 from pyramid.httpexceptions import HTTPFound
+
+from pyramid_sqlalchemy import Session
+
+from sqlalchemy.orm.exc import NoResultFound
 
 from yithlibraryserver.user.models import User
 
@@ -31,18 +33,19 @@ def get_user(request):
         return user_id
 
     try:
-        user = request.db.users.find_one(bson.ObjectId(user_id))
-    except bson.errors.InvalidId:
-        return None
+        user = Session.query(User).filter(User.id==user_id).one()
+    except NoResultFound:
+        user = None
 
-    return User(user)
+    return user
 
 
 def assert_authenticated_user_is_registered(request):
     user_id = request.authenticated_userid
+
     try:
-        user = request.db.users.find_one(bson.ObjectId(user_id))
-    except bson.errors.InvalidId:
+        user = Session.query(User).filter(User.id==user_id).one()
+    except NoResultFound:
         raise HTTPFound(location=request.route_path('register_new_user'))
     else:
-        return User(user)
+        return user

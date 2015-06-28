@@ -16,24 +16,25 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
-import operator
+from pyramid_sqlalchemy import Session
+from sqlalchemy import desc, func, select
 
-from yithlibraryserver.user.accounts import get_available_providers
-from yithlibraryserver.user.accounts import get_provider_key, get_n_passwords
+from yithlibraryserver.oauth2.models import Application
+from yithlibraryserver.password.models import Password
 from yithlibraryserver.scripts.utils import safe_print, setup_simple_command
 from yithlibraryserver.scripts.utils import get_user_display_name
+from yithlibraryserver.user.models import ExternalIdentity, User
 
 
-def _get_user_info(db, user):
-    providers = ', '.join([prov for prov in get_available_providers()
-                           if ('%s_id' % prov) in user])
+def _get_user_info(user):
+    providers = ', '.join(sorted([identity.provider for identity in user.identities]))
     return {
         'display_name': get_user_display_name(user),
-        'passwords': get_n_passwords(db, user),
+        'passwords': len(user.passwords),
         'providers': providers,
-        'verified': user.get('email_verified', False),
-        'date_joined': user.get('date_joined', 'Unknown'),
-        'last_login': user.get('last_login', 'Unknown'),
+        'verified': user.email_verified,
+        'date_joined': user.creation,
+        'last_login': user.last_login,
     }
 
 
@@ -48,9 +49,8 @@ def users():
         settings, closer, env, args = result
 
     try:
-        db = settings['mongodb'].get_database()
-        for user in db.users.find().sort('date_joined'):
-            info = _get_user_info(db, user)
+        for user in Session.query(User).order_by(User.creation):
+            info = _get_user_info(user)
             providers = info['providers']
             text = (
                 '%s (%s)\n'
@@ -60,7 +60,7 @@ def users():
                 '\tDate joined: %s\n'
                 '\tLast login: %s\n' % (
                     info['display_name'],
-                    user['_id'],
+                    user.id,
                     info['passwords'],
                     ' ' + providers if providers else '',
                     info['verified'],
@@ -74,24 +74,6 @@ def users():
         closer()
 
 
-def _get_app_info(db, app):
-    user = db.users.find_one({'_id': app['owner']})
-    if user is None:
-        owner = 'Unknown owner (%s)' % app['owner']
-    else:
-        owner = get_user_display_name(user)
-
-    return {
-        'name': app['name'],
-        'owner': owner,
-        'main_url': app['main_url'],
-        'callback_url': app['callback_url'],
-        'users': db.authorized_apps.find({
-            'client_id': app['client_id'],
-        }).count()
-    }
-
-
 def applications():
     result = setup_simple_command(
         "applications",
@@ -103,89 +85,24 @@ def applications():
         settings, closer, env, args = result
 
     try:
-        db = settings['mongodb'].get_database()
-        for app in db.applications.find():
-            info = _get_app_info(db, app)
+        for app in Session.query(Application).all():
             text = (
                 '%s\n'
                 '\tOwner: %s\n'
                 '\tMain URL: %s\n'
                 '\tCallback URL: %s\n'
                 '\tUsers: %d\n' % (
-                    info['name'], info['owner'],
-                    info['main_url'], info['callback_url'],
-                    info['users'],
+                    app.name,
+                    get_user_display_name(app.user),
+                    app.main_url,
+                    app.callback_url,
+                    len(app.authorized_applications),
                 )
             )
             safe_print(text)
 
     finally:
         closer()
-
-
-def group_by_identity_provider(users):
-    providers = {}
-    for user in users:
-        for provider in get_available_providers():
-            key = get_provider_key(provider)
-            if user.get(key, None):
-                if provider in providers:
-                    providers[provider] += 1
-                else:
-                    providers[provider] = 1
-
-    return sorted(providers.items(), key=operator.itemgetter(1), reverse=True)
-
-
-def group_by_email_provider(users, threshold):
-    providers = {}
-    no_email = 0
-    for user in users:
-        email = user.get('email', None)
-        if not email:
-            no_email += 1
-            continue
-
-        provider = email.split('@')[1]
-        if provider in providers:
-            providers[provider] += 1
-        else:
-            providers[provider] = 1
-
-    providers = [(p, a) for p, a in providers.items() if a > threshold]
-    providers.sort(key=operator.itemgetter(1), reverse=True)
-
-    return providers, no_email
-
-
-def get_passwords_map(passwords):
-    # make a password dict keyed by users_id
-    passwords_map = {}
-    for password in passwords:
-        owner = password['owner']
-        if owner in passwords_map:
-            passwords_map[owner] += 1
-        else:
-            passwords_map[owner] = 1
-
-    return passwords_map
-
-
-def users_with_most_passwords(users, passwords, amount):
-    passwords_map = get_passwords_map(passwords)
-    users_map = dict([(user['_id'], user) for user in users])
-
-    passwords_list = sorted(
-        passwords_map.items(),
-        key=operator.itemgetter(1),
-        reverse=True,
-    )[:amount]
-
-    result = []
-    for password_owner, amount in passwords_list:
-        result.append((users_map[password_owner], amount))
-
-    return result, len(passwords_map)
 
 
 def statistics():
@@ -199,33 +116,48 @@ def statistics():
         settings, closer, env, args = result
 
     try:
-        db = settings['mongodb'].get_database()
-
         # Get the number of users and passwords
-        n_users = db.users.count()
+        n_users = Session.query(User).count()
         if n_users == 0:
             return
 
-        n_passwords = db.passwords.count()
+        n_passwords = Session.query(Password).count()
 
         # How many users are verified
-        n_verified = db.users.find({'email_verified': True}).count()
+        n_verified = Session.query(User).filter(
+            User.email_verified==True).count()
         # How many users allow the analytics cookie
-        n_allow_cookie = db.users.find({'allow_google_analytics': True}).count()
-
-        all_users = list(db.users.find())
+        n_allow_cookie = Session.query(User).filter(
+            User.allow_google_analytics==True).count()
 
         # Identity providers
-        by_identity = group_by_identity_provider(all_users)
+        by_identity = Session.query(
+            ExternalIdentity.provider,
+            func.count(ExternalIdentity.provider).label('provider_count')
+        ).select_from(
+            ExternalIdentity
+        ).group_by(ExternalIdentity.provider).order_by(desc('provider_count'))
 
         # Email providers
-        by_email, without_email = group_by_email_provider(all_users, 1)
+        domains_with_counts = select([
+            func.substring(User.email, r'.*@(.*)').label('domain'),
+            func.count('*').label('count'),
+        ]).where(User.email!='').group_by('domain').order_by(desc('count'))
+        aliased = domains_with_counts.alias()
+        by_email = Session.query(aliased).filter(aliased.c.count>1)
+
+        without_email = Session.query(User).filter(User.email=='').count()
         with_email = n_users - without_email
 
         # Top ten users
-        all_passwords = list(db.passwords.find())
-        most_active_users, users_with_passwords = users_with_most_passwords(
-            all_users, all_passwords, 10)
+        most_active_users = Session.query(
+            User, func.count(User.id).label('password_count'),
+        ).join(
+            Password
+        ).group_by(User.id).order_by(desc('password_count'))
+
+        users_with_passwords = most_active_users.count()
+        most_active_users = most_active_users.limit(10)
 
         # print the statistics
         safe_print('Number of users: %d' % n_users)

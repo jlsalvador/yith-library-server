@@ -26,7 +26,7 @@ from yithlibraryserver.email import send_email
 
 
 def send_passwords(request, user, preferences_link, backups_link):
-    passwords = get_user_passwords(request.db, user)
+    passwords = get_user_passwords(user)
     if not passwords:
         return False
 
@@ -46,7 +46,7 @@ def send_passwords(request, user, preferences_link, backups_link):
         'yithlibraryserver.backups:templates/email_passwords',
         context,
         "Your Yith Library's passwords",
-        [user['email']],
+        [user.email],
         attachments=[attachment],
     )
 

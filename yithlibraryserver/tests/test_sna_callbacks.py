@@ -1,5 +1,5 @@
 # Yith Library Server is a password storage server.
-# Copyright (C) 2013 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
+# Copyright (C) 2013-2015 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
 #
 # This file is part of Yith Library Server.
 #
@@ -20,29 +20,38 @@ import unittest
 
 from pyramid import testing
 
-from yithlibraryserver.db import MongoDB
+from pyramid_sqlalchemy import metadata
+
 from yithlibraryserver.sna_callbacks import (
     facebook_callback,
     google_callback,
     liveconnect_callback,
 )
-from yithlibraryserver.testing import MONGO_URI, clean_db
+from yithlibraryserver.testing import (
+    get_test_db_uri,
+    sqlalchemy_setup,
+    sqlalchemy_teardown,
+)
 
 
 class SNACallbackTests(unittest.TestCase):
 
     def setUp(self):
+        self.db_uri = get_test_db_uri()
+        self.db_context = sqlalchemy_setup(self.db_uri)
+
         self.config = testing.setUp()
         self.config.include('yithlibraryserver')
         self.config.include('yithlibraryserver.user')
+
+        metadata.create_all()
+
         self.request = testing.DummyRequest()
         self.request.session = {}
-        mdb = MongoDB(MONGO_URI)
-        self.request.db = mdb.get_database()
 
     def tearDown(self):
         testing.tearDown()
-        clean_db(self.request.db)
+        sqlalchemy_teardown(self.db_context)
 
     def test_facebook_callback(self):
         result = facebook_callback(self.request, '123', {

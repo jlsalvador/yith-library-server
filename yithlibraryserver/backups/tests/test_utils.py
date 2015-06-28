@@ -17,37 +17,93 @@
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+import unittest
+
+from freezegun import freeze_time
+
+from pyramid import testing
+
+from pyramid_sqlalchemy import metadata
+from pyramid_sqlalchemy import Session
+
+import transaction
 
 from yithlibraryserver.backups.utils import get_user_passwords
 from yithlibraryserver.backups.utils import get_backup_filename
 from yithlibraryserver.backups.utils import compress, uncompress
-from yithlibraryserver.testing import TestCase
+from yithlibraryserver.password.models import Password
+from yithlibraryserver.testing import (
+    get_test_db_uri,
+    sqlalchemy_setup,
+    sqlalchemy_teardown,
+)
+from yithlibraryserver.user.models import User
 
 
-class UtilsTests(TestCase):
+class UtilsTests(unittest.TestCase):
 
-    def test_get_user_passwords(self):
-        user_id = self.db.users.insert({
-            'first_name': 'John',
-            'last_name': 'Doe',
-        })
-        user = self.db.users.find_one({'_id': user_id})
+    def setUp(self):
+        self.db_uri = get_test_db_uri()
+        self.db_context = sqlalchemy_setup(self.db_uri)
+        self.config = testing.setUp()
+        self.config.include('yithlibraryserver.password')
+        self.config.include('yithlibraryserver.user')
+        metadata.create_all()
 
-        self.assertEqual(get_user_passwords(self.db, user), [])
+    def tearDown(self):
+        testing.tearDown()
+        sqlalchemy_teardown(self.db_context)
 
-        self.db.passwords.insert({
-            'owner': user_id,
-            'password': 'secret1',
-        })
-        self.db.passwords.insert({
-            'owner': user_id,
-            'password': 'secret2',
-        })
+    def test_get_user_passwords_no_passwords(self):
+        user = User(first_name='John',
+                    last_name='Doe')
 
-        self.assertEqual(get_user_passwords(self.db, user), [{
-            'password': 'secret1',
+        with transaction.manager:
+            Session.add(user)
+            Session.flush()
+            user_id = user.id
+
+        user = Session.query(User).filter(User.id==user_id).one()
+
+        self.assertEqual(get_user_passwords(user), [])
+
+    @freeze_time('2014-02-23 08:00:00')
+    def test_get_user_passwords_some_passwords(self):
+        user = User(first_name='John',
+                    last_name='Doe',
+                    email='john@example.com')
+
+        # add some passwords
+        password1 = Password(secret='s3cr3t1', user=user)
+        password2 = Password(secret='s3cr3t2', user=user)
+
+        with transaction.manager:
+            Session.add(user)
+            Session.add(password1)
+            Session.add(password2)
+            Session.flush()
+            user_id = user.id
+
+        user = Session.query(User).filter(User.id==user_id).one()
+
+        self.assertEqual(get_user_passwords(user), [{
+            'account': '',
+            'creation': datetime.datetime(2014, 2, 23, 8, 0, 0),
+            'expiration': None,
+            'modification': datetime.datetime(2014, 2, 23, 8, 0, 0),
+            'notes': '',
+            'secret': 's3cr3t1',
+            'service': '',
+            'tags': [],
         }, {
-            'password': 'secret2',
+            'account': '',
+            'creation': datetime.datetime(2014, 2, 23, 8, 0, 0),
+            'expiration': None,
+            'modification': datetime.datetime(2014, 2, 23, 8, 0, 0),
+            'notes': '',
+            'secret': 's3cr3t2',
+            'service': '',
+            'tags': [],
         }])
 
     def test_get_backup_filename(self):
@@ -57,6 +113,24 @@ class UtilsTests(TestCase):
                          'yith-library-backup-2013-01-08.yith')
 
     def test_compress_and_uncompress(self):
-        passwords = [{'password': 'secret1'}, {'password': 'secret2'}]
+        passwords = [{
+            'account': '',
+            'creation': datetime.datetime(2014, 2, 23, 8, 0, 0),
+            'expiration': None,
+            'modification': datetime.datetime(2014, 2, 23, 8, 0, 0),
+            'notes': '',
+            'secret': 's3cr3t2',
+            'service': '',
+            'tags': [],
+        }, {
+            'account': '',
+            'creation': datetime.datetime(2014, 2, 23, 8, 0, 0),
+            'expiration': None,
+            'modification': datetime.datetime(2014, 2, 23, 8, 0, 0),
+            'notes': '',
+            'secret': 's3cr3t2',
+            'service': '',
+            'tags': [],
+        }]
 
         self.assertEqual(uncompress(compress(passwords)), passwords)

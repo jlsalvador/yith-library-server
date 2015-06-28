@@ -1,5 +1,5 @@
 # Yith Library Server is a password storage server.
-# Copyright (C) 2014 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
+# Copyright (C) 2014-2015 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
 #
 # This file is part of Yith Library Server.
 #
@@ -18,16 +18,21 @@
 
 import datetime
 
-from bson.tz_util import utc
 from freezegun import freeze_time
 
 from pyramid.httpexceptions import HTTPUnauthorized
 
-from yithlibraryserver import testing
+from pyramid_sqlalchemy import Session
+
+import transaction
+
+from yithlibraryserver.testing import FakeRequest, TestCase
 from yithlibraryserver.oauth2.decorators import (
     protected,
     protected_method,
 )
+from yithlibraryserver.oauth2.models import AccessCode
+from yithlibraryserver.oauth2.tests import create_client, create_user
 
 
 @protected(['scope1'])
@@ -45,63 +50,50 @@ class ViewClass(object):
         return 'response'
 
 
-class DecoratorsTests(testing.TestCase):
+class DecoratorsTests(TestCase):
 
     def setUp(self):
         super(DecoratorsTests, self).setUp()
-        self.user_id = self.db.users.insert({
-            'username': 'user1',
-        })
+        self.owner_id, self.app_id, _ = create_client()
+        _, self.user_id = create_user()
 
     def _create_access_code(self, scope):
-        expiration = datetime.datetime(2014, 2, 23, 9, 0, tzinfo=utc)
-        self.db.access_codes.insert({
-            'access_token': '1234',
-            'type': 'Bearer',
-            'expiration': expiration,
-            'user_id': self.user_id,
-            'scope': scope,
-            'client_id': 'client1',
-        })
+        expiration = datetime.datetime(2014, 2, 23, 9, 0)
+        access_code = AccessCode(code='1234',
+                                 code_type='Bearer',
+                                 expiration=expiration,
+                                 scope=scope,
+                                 user_id=self.user_id,
+                                 application_id=self.app_id)
+        with transaction.manager:
+            Session.add(access_code)
+            Session.flush()
 
     @freeze_time('2014-02-23 08:00:00')
     def test_protected_bad_scope(self):
-        self._create_access_code('scope2')
-
-        request = testing.FakeRequest(headers={
-            'Authorization': 'Bearer 1234',
-        }, db=self.db)
-
+        self._create_access_code(['scope2'])
+        request = FakeRequest(headers={'Authorization': 'Bearer 1234'})
         self.assertRaises(HTTPUnauthorized, view_function, request)
 
     @freeze_time('2014-02-23 08:00:00')
     def test_protected(self):
-        self._create_access_code('scope1')
+        self._create_access_code(['scope1'])
 
-        request = testing.FakeRequest(headers={
-            'Authorization': 'Bearer 1234',
-        }, db=self.db)
-
+        request = FakeRequest(headers={'Authorization': 'Bearer 1234'})
         self.assertEqual(view_function(request), 'response')
-        self.assertEqual(request.user['username'], 'user1')
+        self.assertEqual(request.user.id, self.user_id)
 
     @freeze_time('2014-02-23 08:00:00')
     def test_protected_method_bad_scope(self):
-        self._create_access_code('scope2')
-        request = testing.FakeRequest(headers={
-            'Authorization': 'Bearer 1234',
-        }, db=self.db)
-
+        self._create_access_code(['scope2'])
+        request = FakeRequest(headers={'Authorization': 'Bearer 1234'})
         view_object = ViewClass(request)
         self.assertRaises(HTTPUnauthorized, view_object.view_method)
 
     @freeze_time('2014-02-23 08:00:00')
     def test_protected_method(self):
-        self._create_access_code('scope1')
-        request = testing.FakeRequest(headers={
-            'Authorization': 'Bearer 1234',
-        }, db=self.db)
-
+        self._create_access_code(['scope1'])
+        request = FakeRequest(headers={'Authorization': 'Bearer 1234'})
         view_object = ViewClass(request)
         self.assertEqual(view_object.view_method(), 'response')
-        self.assertEqual(request.user['username'], 'user1')
+        self.assertEqual(request.user.id, self.user_id)

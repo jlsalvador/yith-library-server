@@ -20,7 +20,12 @@
 
 import uuid
 
+from sqlalchemy.orm.exc import NoResultFound
+
+from pyramid_sqlalchemy import Session
+
 from yithlibraryserver.email import send_email
+from yithlibraryserver.user.models import User
 
 
 class EmailVerificationCode(object):
@@ -34,32 +39,20 @@ class EmailVerificationCode(object):
     def _generate_code(self):
         return str(uuid.uuid4())
 
-    def store(self, db, user):
-        result = db.users.update({'_id': user['_id']}, {
-            '$set': {'email_verification_code': self.code},
-        })
-        return result['n'] == 1
-
-    def remove(self, db, email, verified):
-        result = db.users.update({
-            'email_verification_code': self.code,
-            'email': email,
-        }, {
-            '$unset': {'email_verification_code': 1},
-            '$set': {'email_verified': verified},
-        })
-        return result['n'] == 1
-
-    def verify(self, db, email):
-        result = db.users.find_one({
-            'email': email,
-            'email_verification_code': self.code,
-        })
-        return result is not None
+    def verify(self, email):
+        try:
+            return Session.query(
+                User
+            ).filter(
+                User.email==email,
+                User.email_verification_code==self.code
+            ).one()
+        except NoResultFound:
+            return None
 
     def send(self, request, user, url):
         context = {
-            'link': '%s?code=%s&email=%s' % (url, self.code, user['email']),
+            'link': '%s?code=%s&email=%s' % (url, self.code, user.email),
             'user': user,
         }
         return send_email(
@@ -67,5 +60,5 @@ class EmailVerificationCode(object):
             'yithlibraryserver.user:templates/email_verification_code',
             context,
             'Please verify your email address',
-            [user['email']],
+            [user.email],
         )

@@ -1,14 +1,14 @@
-The user ${firstname} has donated $${amount}!
+The user ${first_name} has donated $${amount}!
 
 This is the information regarding this donation:
 
 Personal information:
-${firstname} ${lastname}
+${first_name} ${last_name}
 ${email}
 
 Address
 ${street}
-${zip} ${city}
+${zipcode} ${city}
 ${state} ${country}
 
 Should we send a sticker? ${send_sticker}

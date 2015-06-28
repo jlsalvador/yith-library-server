@@ -16,123 +16,23 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
-import datetime
 import unittest
 
-from bson.tz_util import utc
-from freezegun import freeze_time
-
-from pyramid import testing
-
-from yithlibraryserver.db import MongoDB
-from yithlibraryserver.testing import MONGO_URI, clean_db
-
-from yithlibraryserver.contributions.models import include_sticker
-from yithlibraryserver.contributions.models import create_donation
+from yithlibraryserver.contributions.models import Donation, include_sticker
+from yithlibraryserver.testing import TestCase
 
 
-class ModelTests(unittest.TestCase):
-
-    def setUp(self):
-        self.config = testing.setUp()
-        mdb = MongoDB(MONGO_URI)
-        self.db = mdb.get_database()
-        self.freezer = freeze_time('2013-01-02 10:11:02')
-        self.freezer.start()
-
-        self.request = testing.DummyRequest()
-        self.request.db = self.db
-
-    def tearDown(self):
-        testing.tearDown()
-        clean_db(self.db)
-        self.freezer.stop()
+class IncludeStickerTests(unittest.TestCase):
 
     def test_include_sticker(self):
         self.assertFalse(include_sticker(1))
         self.assertTrue(include_sticker(5))
         self.assertTrue(include_sticker(10))
 
-    def test_create_donation_no_sticker(self):
-        self.request.user = None
 
-        donation = create_donation(self.request, {
-            'amount': 1,
-            'firstname': 'John',
-            'lastname': 'Doe',
-            'city': 'Springfield',
-            'country': 'Exampleland',
-            'state': 'Example',
-            'street': 'Main Street 10',
-            'zip': '12345678',
-            'email': 'john@example.com',
-        })
+class ModelTests(TestCase):
 
-        self.assertEqual(donation['firstname'], 'John')
-        self.assertEqual(donation['lastname'], 'Doe')
-        self.assertEqual(donation['city'], 'Springfield')
-        self.assertEqual(donation['country'], 'Exampleland')
-        self.assertEqual(donation['state'], 'Example')
-        self.assertEqual(donation['street'], 'Main Street 10')
-        self.assertEqual(donation['zip'], '12345678')
-        self.assertEqual(donation['email'], 'john@example.com')
-        self.assertEqual(donation['creation'],
-                         datetime.datetime(2013, 1, 2, 10, 11, 2, tzinfo=utc))
-        self.assertEqual(donation['send_sticker'], False)
-        self.assertEqual(donation['user'], None)
-
-    def test_create_donation_with_sticker(self):
-        self.request.user = None
-
-        donation = create_donation(self.request, {
-            'amount': 5,
-            'firstname': 'John',
-            'lastname': 'Doe',
-            'city': 'Springfield',
-            'country': 'Exampleland',
-            'state': 'Example',
-            'street': 'Main Street 10',
-            'zip': '12345678',
-            'email': 'john@example.com',
-        })
-
-        self.assertEqual(donation['firstname'], 'John')
-        self.assertEqual(donation['lastname'], 'Doe')
-        self.assertEqual(donation['city'], 'Springfield')
-        self.assertEqual(donation['country'], 'Exampleland')
-        self.assertEqual(donation['state'], 'Example')
-        self.assertEqual(donation['street'], 'Main Street 10')
-        self.assertEqual(donation['zip'], '12345678')
-        self.assertEqual(donation['email'], 'john@example.com')
-        self.assertEqual(donation['creation'],
-                         datetime.datetime(2013, 1, 2, 10, 11, 2, tzinfo=utc))
-        self.assertEqual(donation['send_sticker'], True)
-        self.assertEqual(donation['user'], None)
-
-    def test_create_donation_with_user(self):
-        self.request.user = {'_id': 'fake_user_id'}
-
-        donation = create_donation(self.request, {
-            'amount': 10,
-            'firstname': 'John',
-            'lastname': 'Doe',
-            'city': 'Springfield',
-            'country': 'Exampleland',
-            'state': 'Example',
-            'street': 'Main Street 10',
-            'zip': '12345678',
-            'email': 'john@example.com',
-        })
-
-        self.assertEqual(donation['firstname'], 'John')
-        self.assertEqual(donation['lastname'], 'Doe')
-        self.assertEqual(donation['city'], 'Springfield')
-        self.assertEqual(donation['country'], 'Exampleland')
-        self.assertEqual(donation['state'], 'Example')
-        self.assertEqual(donation['street'], 'Main Street 10')
-        self.assertEqual(donation['zip'], '12345678')
-        self.assertEqual(donation['email'], 'john@example.com')
-        self.assertEqual(donation['creation'],
-                         datetime.datetime(2013, 1, 2, 10, 11, 2, tzinfo=utc))
-        self.assertEqual(donation['send_sticker'], True)
-        self.assertEqual(donation['user'], 'fake_user_id')
+    def test_should_include_sticker(self):
+        self.assertFalse(Donation(amount=1).should_include_sticker())
+        self.assertTrue(Donation(amount=5).should_include_sticker())
+        self.assertTrue(Donation(amount=10).should_include_sticker())

@@ -21,7 +21,7 @@
 import json
 
 
-def validate_password(rawdata, encoding='utf-8', _id=None):
+def validate_password(rawdata, encoding='utf-8'):
     errors = []
 
     try:
@@ -51,11 +51,9 @@ def validate_password(rawdata, encoding='utf-8', _id=None):
         errors.append('Service is required')
 
     # then optional attributes
-    password['account'] = data.get('account')
+    password['account'] = data.get('account', '')
     password['expiration'] = data.get('expiration')
-    password['notes'] = data.get('notes')
-    password['tags'] = data.get('tags')
-    password['last_modification'] = data.get('last_modification')
-    password['creation'] = data.get('creation')
+    password['notes'] = data.get('notes', '')
+    password['tags'] = data.get('tags', [])
 
     return password, errors

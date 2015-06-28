@@ -1,5 +1,5 @@
 # Yith Library Server is a password storage server.
-# Copyright (C) 2014 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
+# Copyright (C) 2014-2015 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
 #
 # This file is part of Yith Library Server.
 #
@@ -18,25 +18,25 @@
 
 import datetime
 import logging
-
-from bson.tz_util import utc
+import uuid
 
 import oauthlib.oauth2
 from oauthlib.common import to_unicode
 
+from pyramid_sqlalchemy import Session
+
+from sqlalchemy.orm.exc import NoResultFound
+
 from yithlibraryserver.i18n import TranslationString as _
+from yithlibraryserver.oauth2.models import (
+    AccessCode,
+    Application,
+    AuthorizationCode,
+)
 from yithlibraryserver.oauth2.utils import decode_base64
 
 
 logger = logging.getLogger(__name__)
-
-
-class WrappedClient(object):
-
-    def __init__(self, client):
-        self._client = client
-        for key, value in client.items():
-            setattr(self, key, value)
 
 
 class RequestValidator(oauthlib.oauth2.RequestValidator):
@@ -47,19 +47,26 @@ class RequestValidator(oauthlib.oauth2.RequestValidator):
         'read-userinfo': _('Access your user information'),
     }
 
-    def __init__(self, db, default_scopes=None):
-        self.db = db
+    def __init__(self, default_scopes=None):
         if default_scopes is None:
             self.default_scopes = ['read-passwords']
         else:
             self.default_scopes = default_scopes
 
     def get_client(self, client_id):
-        client = self.db.applications.find_one(
-            {'client_id': client_id}
-        )
-        if client is not None:
-            return WrappedClient(client)
+        try:
+            uuid.UUID(client_id)
+        except ValueError:
+            client = None
+        else:
+            try:
+                client = Session.query(Application).filter(
+                    Application.id==client_id
+                ).one()
+            except NoResultFound:
+                client = None
+
+        return client
 
     def get_pretty_scopes(self, scopes):
         return [self.scopes.get(scope) for scope in scopes]
@@ -118,17 +125,19 @@ class RequestValidator(oauthlib.oauth2.RequestValidator):
         (the last is passed in post_authorization credentials,
         i.e. { 'user': request.user}.
         """
-        now = datetime.datetime.now(tz=utc)
+        now = datetime.datetime.utcnow()
         expiration = now + datetime.timedelta(minutes=10)
-        new_record = {
-            'code': code['code'],
-            'scope': ' '.join(request.scopes),
-            'client_id': client_id,
-            'user': request.user['_id'],
-            'expiration': expiration,
-            'redirect_uri': request.redirect_uri,
-        }
-        self.db.authorization_codes.insert(new_record)
+
+        authorization_code = AuthorizationCode(
+            code=code['code'],
+            creation=now,
+            expiration=expiration,
+            scope=request.scopes,
+            redirect_uri=request.redirect_uri,
+            application=request.client,
+            user=request.user,
+        )
+        Session.add(authorization_code)
 
     # Token request
 
@@ -156,7 +165,10 @@ class RequestValidator(oauthlib.oauth2.RequestValidator):
         request.client = client
         request.client_id = client_id
 
-        if client.client_secret != client_secret:
+        # oauthlib expect the client to has a client_id attribute
+        request.client.client_id = client_id
+
+        if client.secret != client_secret:
             return False
 
         # if client.client_type != 'confidential':
@@ -174,18 +186,22 @@ class RequestValidator(oauthlib.oauth2.RequestValidator):
         Add associated scopes, state and user to request.scopes, request.state
         and request.user.
         """
-        record = self.db.authorization_codes.find_one({
-            'code': code,
-            'client_id': client.client_id,
-        })
+        try:
+            record = Session.query(AuthorizationCode).filter(
+                AuthorizationCode.code==code,
+                AuthorizationCode.application==request.client,
+            ).one()
+        except NoResultFound:
+            record = None
+
         if record is None:
             return False
 
-        if datetime.datetime.now(tz=utc) > record['expiration']:
+        if datetime.datetime.utcnow() > record.expiration:
             return False
 
-        request.user = record['user']
-        request.scopes = record['scope'].split(' ')
+        request.user = record.user
+        request.scopes = record.scope
         return True
 
     def confirm_redirect_uri(self, client_id, code, redirect_uri, client, *args, **kwargs):
@@ -193,14 +209,18 @@ class RequestValidator(oauthlib.oauth2.RequestValidator):
         if redirect_uri is None:
             return True
 
-        record = self.db.authorization_codes.find_one({
-            'code': code,
-            'client_id': client_id,
-        })
-        if record is None:
+        try:
+            authorization_code = Session.query(AuthorizationCode).filter(
+                AuthorizationCode.code==code,
+                AuthorizationCode.application==client,
+            ).one()
+        except NoResultFound:
+            authorization_code = None
+
+        if authorization_code is None:
             return False
 
-        return record['redirect_uri'] == redirect_uri
+        return authorization_code.redirect_uri == redirect_uri
 
     def validate_grant_type(self, client_id, grant_type, client, request, *args, **kwargs):
         """Clients should only be allowed to use one type of grant.
@@ -217,28 +237,28 @@ class RequestValidator(oauthlib.oauth2.RequestValidator):
         Don't forget to save both the access_token and the refresh_token and
         set expiration for the access_token to now + expires_in seconds.
         """
-        now = datetime.datetime.now(tz=utc)
+        now = datetime.datetime.utcnow()
         expiration = now + datetime.timedelta(seconds=token['expires_in'])
-        record = {
-            'access_token': token['access_token'],
-            'type': token['token_type'],
-            'expiration': expiration,
-            'refresh_token': token.get('refresh_token'),
-            'user_id': request.user,
-            'scope': ' '.join(request.scopes),
-            'client_id': request.client.client_id,
-        }
-        self.db.access_codes.insert(record)
+        access_code = AccessCode(
+            code=token['access_token'],
+            code_type=token['token_type'],
+            expiration=expiration,
+            refresh_code=token.get('refresh_token', ''),
+            user=request.user,
+            scope=request.scopes,
+            application=request.client,
+        )
+        Session.add(access_code)
 
     def invalidate_authorization_code(self, client_id, code, request, *args, **kwargs):
         """Authorization codes are use once, invalidate it when a Bearer token
         has been acquired.
         """
-        record = {
-            'code': code,
-            'client_id': request.client.client_id,
-        }
-        self.db.authorization_codes.remove(record)
+        authorization_code = Session.query(AuthorizationCode).filter(
+            AuthorizationCode.code==code,
+            AuthorizationCode.application==request.client,
+        ).one()
+        Session.delete(authorization_code)
 
     # Protected resource request
 
@@ -247,25 +267,27 @@ class RequestValidator(oauthlib.oauth2.RequestValidator):
         if token is None:
             return False
 
-        record = {
-            'access_token': token,
-        }
-        access_code = self.db.access_codes.find_one(record)
+        try:
+            access_code = Session.query(AccessCode).filter(
+                AccessCode.code==token,
+            ).one()
+        except NoResultFound:
+            access_code = None
+
         if access_code is None:
             return False
 
-        if datetime.datetime.now(tz=utc) > access_code['expiration']:
+        if datetime.datetime.utcnow() > access_code.expiration:
             return False
 
-        ac_scopes = access_code['scope'].split(' ')
-        if not set(ac_scopes).issuperset(set(scopes)):
+        if not set(access_code.scope).issuperset(set(scopes)):
             return False
 
         request.access_token = access_code
-        request.user = access_code['user_id']
+        request.user = access_code.user
         request.scopes = scopes
-        request.client_id = access_code['client_id']
-        request.client = self.get_client(request.client_id)
+        request.client_id = access_code.application_id
+        request.client = access_code.application
 
         return True
 

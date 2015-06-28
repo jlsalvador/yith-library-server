@@ -20,7 +20,6 @@
 
 import datetime
 
-from bson.tz_util import utc
 from freezegun import freeze_time
 
 from deform import ValidationFailure
@@ -29,10 +28,22 @@ from mock import patch
 
 from pyramid_mailer import get_mailer
 
+from pyramid_sqlalchemy import Session
+
+from sqlalchemy.orm.exc import NoResultFound
+
+import transaction
+
 from yithlibraryserver.compat import url_quote
-from yithlibraryserver.oauth2.authorization import Authorizator
 from yithlibraryserver.testing import TestCase
+from yithlibraryserver.oauth2.models import (
+    AccessCode,
+    Application,
+    AuthorizedApplication,
+)
+from yithlibraryserver.password.models import Password
 from yithlibraryserver.user.analytics import USER_ATTR
+from yithlibraryserver.user.models import ExternalIdentity, User
 
 
 class DummyValidationFailure(ValidationFailure):
@@ -41,35 +52,54 @@ class DummyValidationFailure(ValidationFailure):
         return 'dummy error'
 
 
-class BadCollection(object):
+def create_user(email='', email_verified=False,
+                provider='twitter', external_id='twitter1', **kwargs):
+    date = datetime.datetime(2012, 12, 12, 12, 12)
+    user = User(screen_name='John Doe',
+                first_name='John',
+                last_name='Doe',
+                email=email,
+                email_verified=email_verified,
+                creation=date,
+                last_login=date,
+                **kwargs)
+    identity = ExternalIdentity(provider=provider,
+                                external_id=external_id,
+                                user=user)
 
-    def __init__(self, user=None):
-        self.user = user
+    with transaction.manager:
+        Session.add(user)
+        Session.add(identity)
+        Session.flush()
+        user_id = user.id
 
-    def find_one(self, *args, **kwargs):
-        return self.user
-
-    def update(self, *args, **kwargs):
-        return {'n': 0}
+    return user_id
 
 
-class BadDB(object):
-
-    def __init__(self, user):
-        self.users = BadCollection(user)
-        self.passwords = BadCollection()
+def create_and_login_user(testapp, **kwargs):
+    user_id = create_user(**kwargs)
+    testapp.get('/__login/' + str(user_id))
+    return user_id
 
 
 class ViewTests(TestCase):
 
     def assertClearAuthCookie(self, headers):
         self.assertTrue('Set-Cookie' in headers)
-        pieces = [p.split('=') for p in headers['Set-Cookie'].split(';')]
-        cookie = dict([(key.strip(), value) for key, value in pieces])
-        self.assertEqual(cookie['auth_tkt'], '')
-        self.assertEqual(cookie['Path'], '/')
-        self.assertEqual(cookie['Domain'], 'localhost')
-        self.assertEqual(cookie['Max-Age'], '0')
+
+        def parse_cookie(raw_string):
+            pieces = [p.split('=') for p in raw_string.split(';')]
+            return dict([(key.strip(), value) for key, value in pieces])
+
+        cookies = [parse_cookie(value) for value in headers.getall('Set-Cookie')]
+
+        for cookie in cookies:
+            if 'auth_tkt' in cookie:
+                self.assertEqual(cookie['auth_tkt'], '')
+                self.assertEqual(cookie['Path'], '/')
+                if 'Domain' in cookie:
+                    self.assertEqual(cookie['Domain'], 'localhost')
+                self.assertEqual(cookie['Max-Age'], '0')
 
     def test_login(self):
         res = self.testapp.get('/login?param1=value1&param2=value2')
@@ -85,15 +115,17 @@ class ViewTests(TestCase):
         res.mustcontain('next_url=/')
 
     @freeze_time('2013-01-02 10:11:02')
-    def test_register_new_user(self):
+    def test_register_new_user_empty_session(self):
         res = self.testapp.get('/register', status=400)
         self.assertEqual(res.status, '400 Bad Request')
         res.mustcontain('Missing user info in the session')
 
+    @freeze_time('2013-01-02 10:11:02')
+    def test_register_new_user_email_verified(self):
         self.testapp.post('/__session', {
             'next_url': 'http://localhost/foo/bar',
-            'user_info__provider': 'myprovider',
-            'user_info__myprovider_id': '1234',
+            'user_info__provider': 'facebook',
+            'user_info__external_id': '1234',
             'user_info__screen_name': 'John Doe',
             'user_info__first_name': 'John',
             'user_info__last_name': 'Doe',
@@ -108,7 +140,7 @@ class ViewTests(TestCase):
         res.mustcontain("Doe")
         res.mustcontain("john@example.com")
 
-        self.assertEqual(self.db.users.count(), 0)
+        self.assertEqual(Session.query(User).count(), 0)
         res = self.testapp.post('/register', {
             'first_name': 'John',
             'last_name': 'Doe',
@@ -117,20 +149,25 @@ class ViewTests(TestCase):
         }, status=302)
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/foo/bar')
-        self.assertEqual(self.db.users.count(), 1)
-        user = self.db.users.find_one({'first_name': 'John'})
-        self.assertFalse(user is None)
-        self.assertEqual(user['first_name'], 'John')
-        self.assertEqual(user['last_name'], 'Doe')
-        self.assertEqual(user['email'], 'john@example.com')
-        self.assertEqual(user['email_verified'], True)
-        self.assertEqual(user['send_passwords_periodically'], False)
+        self.assertEqual(Session.query(User).count(), 1)
+        user = Session.query(User).filter(User.first_name=='John').one()
+        self.assertEqual(user.first_name, 'John')
+        self.assertEqual(user.last_name, 'Doe')
+        self.assertEqual(user.email, 'john@example.com')
+        self.assertEqual(user.email_verified, True)
+        self.assertEqual(user.send_passwords_periodically, False)
+        identity = Session.query(ExternalIdentity).filter(
+            ExternalIdentity.external_id=='1234',
+            ExternalIdentity.provider=='facebook',
+        ).one()
+        self.assertEqual(identity.user, user)
 
-        # the next_url and user_info keys are cleared at this point
+    @freeze_time('2013-01-02 10:11:02')
+    def test_register_new_user_email_not_verified(self):
         self.testapp.post('/__session', {
             'next_url': 'http://localhost/foo/bar',
-            'user_info__provider': 'myprovider',
-            'user_info__myprovider_id': '1234',
+            'user_info__provider': 'twitter',
+            'user_info__external_id': '1234',
             'user_info__screen_name': 'John Doe',
             'user_info__first_name': 'John',
             'user_info__last_name': 'Doe',
@@ -147,20 +184,25 @@ class ViewTests(TestCase):
         }, status=302)
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/foo/bar')
-        self.assertEqual(self.db.users.count(), 2)
-        user = self.db.users.find_one({'first_name': 'John2'})
-        self.assertFalse(user is None)
-        self.assertEqual(user['first_name'], 'John2')
-        self.assertEqual(user['last_name'], 'Doe2')
-        self.assertEqual(user['email'], '')
-        self.assertEqual(user['email_verified'], False)
-        self.assertEqual(user['send_passwords_periodically'], False)
+        self.assertEqual(Session.query(User).count(), 1)
+        user = Session.query(User).filter(User.first_name=='John2').one()
+        self.assertEqual(user.first_name, 'John2')
+        self.assertEqual(user.last_name, 'Doe2')
+        self.assertEqual(user.email, '')
+        self.assertEqual(user.email_verified, False)
+        self.assertEqual(user.send_passwords_periodically, False)
+        identity = Session.query(ExternalIdentity).filter(
+            ExternalIdentity.external_id=='1234',
+            ExternalIdentity.provider=='twitter',
+        ).one()
+        self.assertEqual(identity.user, user)
 
-        # the next_url and user_info keys are cleared at this point
+    @freeze_time('2013-01-02 10:11:02')
+    def test_register_new_user_email_not_verified_neither_provided(self):
         self.testapp.post('/__session', {
             'next_url': 'http://localhost/foo/bar',
-            'user_info__provider': 'myprovider',
-            'user_info__myprovider_id': '1234',
+            'user_info__provider': 'google',
+            'user_info__external_id': '1234',
             'user_info__screen_name': 'John Doe',
             'user_info__first_name': 'John',
             'user_info__last_name': 'Doe',
@@ -179,14 +221,18 @@ class ViewTests(TestCase):
         }, status=302)
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/foo/bar')
-        self.assertEqual(self.db.users.count(), 3)
-        user = self.db.users.find_one({'first_name': 'John2'})
-        self.assertFalse(user is None)
-        self.assertEqual(user['first_name'], 'John2')
-        self.assertEqual(user['last_name'], 'Doe2')
-        self.assertEqual(user['email'], '')
-        self.assertEqual(user['email_verified'], False)
-        self.assertEqual(user['send_passwords_periodically'], False)
+        self.assertEqual(Session.query(User).count(), 1)
+        user = Session.query(User).filter(User.first_name=='John2').one()
+        self.assertEqual(user.first_name, 'John2')
+        self.assertEqual(user.last_name, 'Doe2')
+        self.assertEqual(user.email, 'john@example.com')
+        self.assertEqual(user.email_verified, False)
+        self.assertEqual(user.send_passwords_periodically, False)
+        identity = Session.query(ExternalIdentity).filter(
+            ExternalIdentity.external_id=='1234',
+            ExternalIdentity.provider=='google',
+        ).one()
+        self.assertEqual(identity.user, user)
 
         # check that the email was sent
         res.request.registry = self.testapp.app.registry
@@ -197,11 +243,12 @@ class ViewTests(TestCase):
         self.assertEqual(mailer.outbox[0].recipients,
                          ['john@example.com'])
 
-        # the next_url and user_info keys are cleared at this point
+    @freeze_time('2013-01-02 10:11:02')
+    def test_register_new_user_wants_analytics_cookie(self):
         self.testapp.post('/__session', {
             'next_url': 'http://localhost/foo/bar',
-            'user_info__provider': 'myprovider',
-            'user_info__myprovider_id': '1234',
+            'user_info__provider': 'google',
+            'user_info__external_id': '1234',
             'user_info__screen_name': 'John Doe',
             'user_info__first_name': 'John',
             'user_info__last_name': 'Doe',
@@ -218,21 +265,27 @@ class ViewTests(TestCase):
         }, status=302)
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/foo/bar')
-        self.assertEqual(self.db.users.count(), 4)
-        user = self.db.users.find_one({'first_name': 'John3'})
+        self.assertEqual(Session.query(User).count(), 1)
+        user = Session.query(User).filter(User.first_name=='John3').one()
         self.assertFalse(user is None)
-        self.assertEqual(user['first_name'], 'John3')
-        self.assertEqual(user['last_name'], 'Doe3')
-        self.assertEqual(user['email'], 'john3@example.com')
-        self.assertEqual(user['email_verified'], False)
-        self.assertEqual(user[USER_ATTR], True)
-        self.assertEqual(user['send_passwords_periodically'], False)
+        self.assertEqual(user.first_name, 'John3')
+        self.assertEqual(user.last_name, 'Doe3')
+        self.assertEqual(user.email, 'john3@example.com')
+        self.assertEqual(user.email_verified, False)
+        self.assertEqual(user.allow_google_analytics, True)
+        self.assertEqual(user.send_passwords_periodically, False)
+        identity = Session.query(ExternalIdentity).filter(
+            ExternalIdentity.external_id=='1234',
+            ExternalIdentity.provider=='google',
+        ).one()
+        self.assertEqual(identity.user, user)
 
-        # the next_url and user_info keys are cleared at this point
+    @freeze_time('2013-01-02 10:11:02')
+    def test_register_new_user_canceled_with_next_url(self):
         self.testapp.post('/__session', {
             'next_url': 'http://localhost/foo/bar',
-            'user_info__provider': 'myprovider',
-            'user_info__myprovider_id': '1234',
+            'user_info__provider': 'twitter',
+            'user_info__external_id': '1234',
             'user_info__screen_name': 'John Doe',
             'user_info__first_name': 'John',
             'user_info__last_name': 'Doe',
@@ -246,10 +299,11 @@ class ViewTests(TestCase):
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/foo/bar')
 
-        # same thing but no next_url in the session
+    @freeze_time('2013-01-02 10:11:02')
+    def test_register_new_user_canceled_without_next_url(self):
         self.testapp.post('/__session', {
-            'user_info__provider': 'myprovider',
-            'user_info__myprovider_id': '1234',
+            'user_info__provider': 'twitter',
+            'user_info__external_id': '1234',
             'user_info__screen_name': 'John Doe',
             'user_info__first_name': 'John',
             'user_info__last_name': 'Doe',
@@ -262,10 +316,11 @@ class ViewTests(TestCase):
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/oauth2/clients')
 
-        # make the form fail
+    @freeze_time('2013-01-02 10:11:02')
+    def test_register_new_user_form_failed(self):
         self.testapp.post('/__session', {
-            'user_info__provider': 'myprovider',
-            'user_info__myprovider_id': '1234',
+            'user_info__provider': 'twitter',
+            'user_info__external_id': '1234',
             'user_info__screen_name': 'John Doe',
             'user_info__first_name': 'John',
             'user_info__last_name': 'Doe',
@@ -307,25 +362,14 @@ class ViewTests(TestCase):
         self.assertClearAuthCookie(res.headers)
         self.assertFalse('current_provider' in self.get_session(res))
 
-    def test_user_information(self):
+    def test_user_information_requires_authentication(self):
         # this view required authentication
         res = self.testapp.get('/profile')
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Log in')
 
-        # Log in
-        date = datetime.datetime(2012, 12, 12, 12, 12)
-        user_id = self.db.users.insert({
-            'twitter_id': 'twitter1',
-            'screen_name': 'John Doe',
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': '',
-            'email_verified': False,
-            'date_joined': date,
-            'last_login': date,
-        })
-        self.testapp.get('/__login/' + str(user_id))
+    def test_user_information_make_changes(self):
+        user_id = create_and_login_user(self.testapp)
 
         res = self.testapp.get('/profile')
         self.assertEqual(res.status, '200 OK')
@@ -343,10 +387,14 @@ class ViewTests(TestCase):
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/profile')
         # check that the user has changed
-        new_user = self.db.users.find_one({'_id': user_id})
-        self.assertEqual(new_user['first_name'], 'John')
-        self.assertEqual(new_user['last_name'], 'Doe')
-        self.assertEqual(new_user['email'], 'john@example.com')
+        new_user = Session.query(User).filter(User.id==user_id).one()
+
+        self.assertEqual(new_user.first_name, 'John')
+        self.assertEqual(new_user.last_name, 'Doe')
+        self.assertEqual(new_user.email, 'john@example.com')
+
+    def test_user_information_form_fail(self):
+        create_and_login_user(self.testapp)
 
         # make the form fail
         with patch('deform.Form.validate') as fake:
@@ -356,33 +404,14 @@ class ViewTests(TestCase):
             })
             self.assertEqual(res.status, '200 OK')
 
-        # make the db fail
-        with patch('yithlibraryserver.db.MongoDB.get_database') as fake:
-            fake.return_value = BadDB(new_user)
-            res = self.testapp.post('/profile', {
-                'submit': 'Save changes',
-                'first_name': 'John',
-                'last_name': 'Doe',
-                'email': 'john@example.com',
-            })
-            self.assertEqual(res.status, '200 OK')
-            res.mustcontain('There were an error while saving your changes')
-
-    def test_destroy(self):
+    def test_destroy_requires_authentication(self):
         # this view required authentication
         res = self.testapp.get('/destroy')
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Log in')
 
-        # Log in
-        user_id = self.db.users.insert({
-            'twitter_id': 'twitter1',
-            'screen_name': 'John Doe',
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': '',
-        })
-        self.testapp.get('/__login/' + str(user_id))
+    def test_destroy_cancel(self):
+        create_and_login_user(self.testapp)
 
         res = self.testapp.get('/destroy')
         res.mustcontain('Destroy account')
@@ -396,6 +425,9 @@ class ViewTests(TestCase):
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/profile')
 
+    def test_destroy_form_fail(self):
+        create_and_login_user(self.testapp)
+
         # make the form fail
         with patch('deform.Form.validate') as fake:
             fake.side_effect = DummyValidationFailure('f', 'c', 'e')
@@ -405,16 +437,68 @@ class ViewTests(TestCase):
             })
             self.assertEqual(res.status, '200 OK')
 
-        # now the real one
+    def test_destroy_user_who_owns_application_warning_message(self):
+        user_id = create_and_login_user(self.testapp,
+                                        email='john@example.com',
+                                        email_verified=True)
+        app = Application(name='Test Application',
+                          callback_url='https://example.com/callback/',
+                          user_id=user_id
+        )
+        with transaction.manager:
+            Session.add(app)
+            Session.flush()
+
+        res = self.testapp.get('/destroy')
+        res.mustcontain('This account can not be destroyed')
+        res.mustcontain('You can not destroy this account because '
+                        'you are the owner of an application')
+        res.mustcontain('Please remove the application first')
+        res.mustcontain('Go to my appplications')
+
+    def test_destroy_user_who_owns_application_error_message(self):
+        user_id = create_and_login_user(self.testapp,
+                                        email='john@example.com',
+                                        email_verified=True)
+        app = Application(name='Test Application',
+                          callback_url='https://example.com/callback/',
+                          user_id=user_id
+        )
+        with transaction.manager:
+            Session.add(app)
+            Session.flush()
+
+        res = self.testapp.post('/destroy', {
+            'reason': 'I do not need a password manager',
+            'submit': 'Yes, I am sure. Destroy my account',
+        }, status=302)
+        self.assertEqual(res.location, 'http://localhost/oauth2/applications')
+
+        res = self.testapp.get('/oauth2/applications')
+        res.mustcontain('You must remove your applications before '
+                        'destroying your account')
+
+    def test_destroy_success(self):
+        user_id = create_and_login_user(self.testapp)
+
         res = self.testapp.post('/destroy', {
             'reason': 'I do not need a password manager',
             'submit': 'Yes, I am sure. Destroy my account',
         }, status=302)
         self.assertEqual(res.location, 'http://localhost/')
+
         self.assertClearAuthCookie(res.headers)
 
-        user = self.db.users.find_one({'_id': user_id})
-        self.assertEqual(None, user)
+        try:
+            user = Session.query(User).filter(User.id==user_id).one()
+        except NoResultFound:
+            user = None
+        self.assertEqual(user, None)
+
+        identities = Session.query(ExternalIdentity).filter(
+            ExternalIdentity.user_id==user_id
+        ).count()
+        self.assertEqual(identities, 0)
 
         res.request.registry = self.testapp.app.registry
         mailer = get_mailer(res.request)
@@ -425,21 +509,13 @@ class ViewTests(TestCase):
                          ['admin1@example.com', 'admin2@example.com'])
         self.assertTrue('I do not need a password manager' in mailer.outbox[0].body)
 
-    def test_send_email_verification_code(self):
-        # this view required authentication
+    def test_send_email_verification_code_requires_authentication(self):
         res = self.testapp.get('/send-email-verification-code')
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Log in')
 
-        # Log in
-        user_id = self.db.users.insert({
-            'twitter_id': 'twitter1',
-            'screen_name': 'John Doe',
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': '',
-        })
-        self.testapp.get('/__login/' + str(user_id))
+    def test_send_email_verification_code_user_has_no_email(self):
+        create_and_login_user(self.testapp)
 
         # the user has no email so an error is expected
         res = self.testapp.get('/send-email-verification-code')
@@ -449,9 +525,8 @@ class ViewTests(TestCase):
             'error': 'You have not an email in your profile',
         })
 
-        # let's give the user an email
-        self.db.users.update({'_id': user_id},
-                             {'$set': {'email': 'john@example.com'}})
+    def test_send_email_verification_code_wrong_method(self):
+        create_and_login_user(self.testapp, email='john@example.com')
 
         # the request must be a post
         res = self.testapp.get('/send-email-verification-code')
@@ -461,7 +536,9 @@ class ViewTests(TestCase):
             'error': 'Not a post',
         })
 
-        # now a good request
+    def test_send_email_verification_code_good_request(self):
+        create_and_login_user(self.testapp, email='john@example.com')
+
         res = self.testapp.post('/send-email-verification-code', {
             'submit': 'Send verification code'})
         self.assertEqual(res.status, '200 OK')
@@ -477,81 +554,81 @@ class ViewTests(TestCase):
         self.assertEqual(mailer.outbox[0].recipients,
                          ['john@example.com'])
 
-        # simulate a db failure
-        with patch('yithlibraryserver.user.email_verification.EmailVerificationCode.store') as fake:
-            fake.return_value = False
-            res = self.testapp.post('/send-email-verification-code', {
-                'submit': 'Send verification code'})
-            self.assertEqual(res.status, '200 OK')
-            self.assertEqual(res.json, {
-                'status': 'bad',
-                'error': 'There were problems storing the verification code',
-            })
-
-    def test_verify_email(self):
+    def test_verify_email_no_code_parameter(self):
         res = self.testapp.get('/verify-email', status=400)
         self.assertEqual(res.status, '400 Bad Request')
         res.mustcontain('Missing code parameter')
 
+    def test_verify_email_no_email_parameter(self):
         res = self.testapp.get('/verify-email?code=1234', status=400)
         self.assertEqual(res.status, '400 Bad Request')
         res.mustcontain('Missing email parameter')
 
+    def test_verify_email_bad_code(self):
         res = self.testapp.get('/verify-email?code=1234&email=john@example.com')
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Sorry, your verification code is not correct or has expired')
 
-        user_id = self.db.users.insert({
-            'twitter_id': 'twitter1',
-            'screen_name': 'John Doe',
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': 'john@example.com',
-            'email_verification_code': '1234',
-        })
+    def test_verify_email_good_code(self):
+        user_id = create_user(email='john@example.com',
+                              email_verification_code='1234')
 
         res = self.testapp.get('/verify-email?code=1234&email=john@example.com')
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Congratulations, your email has been successfully verified')
 
-        user = self.db.users.find_one({'_id': user_id})
-        self.assertEqual(user['email_verified'], True)
-        self.assertFalse('email_verification_code' in user)
+        user = Session.query(User).filter(User.id==user_id).one()
+        self.assertEqual(user.email_verified, True)
+        self.assertEqual(user.email_verification_code, '')
 
-    def test_identity_providers(self):
-        # this view required authentication
+
+class IdentityProviderViewTests(TestCase):
+
+    def test_identity_providers_requires_authentication(self):
         res = self.testapp.get('/identity-providers')
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Log in')
 
-        authorizator = Authorizator(self.db)
+    def test_identity_providers_only_one_account(self):
+        user1_id = create_and_login_user(self.testapp,
+                                         email='john@example.com',
+                                         email_verified=True)
+        app1 = Application(name='Test Application',
+                           callback_url='https://example.com/callback/1')
+        app2 = Application(name='Test Application',
+                           callback_url='https://example.com/callback/2')
+        admin = User(screen_name='Alice doe',
+                     first_name='Alice',
+                     last_name='Doe',
+                     email='alice@example.com')
+        admin.applications.append(app1)
+        admin.applications.append(app2)
 
-        # Log in
-        user1_id = self.db.users.insert({
-            'twitter_id': 'twitter1',
-            'screen_name': 'John Doe',
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': 'john@example.com',
-            'email_verified': True,
-        })
-        authorizator.store_user_authorization(['scope1'], {
-            'client_id': 'app1',
-            'user': {'_id': user1_id},
-            'redirect_uri': 'http://example.com/callback/1',
-            'response_type': 'code',
-        })
-        authorizator.store_user_authorization(['scope1'], {
-            'client_id': 'app2',
-            'user': {'_id': user1_id},
-            'redirect_uri': 'http://example.com/callback/2',
-            'response_type': 'code',
-        })
-        self.testapp.get('/__login/' + str(user1_id))
-        self.db.passwords.insert({
-            'owner': user1_id,
-            'password': 'secret1',
-        })
+        auth_app1 = AuthorizedApplication(
+            scope=['scope1'],
+            response_type='code',
+            redirect_uri='http://example.com/callback/1',
+            application=app1,
+            user_id=user1_id,
+        )
+        auth_app2 = AuthorizedApplication(
+            scope=['scope1'],
+            response_type='code',
+            redirect_uri='http://example.com/callback/2',
+            application=app2,
+            user_id=user1_id,
+        )
+        password = Password(secret='s3cr3t',
+                            user_id=user1_id)
+
+        with transaction.manager:
+            Session.add(admin)
+            Session.add(app1)
+            Session.add(app2)
+            Session.add(auth_app1)
+            Session.add(auth_app2)
+            Session.add(password)
+            Session.flush()
 
         # one account is not enough for merging
         res = self.testapp.post('/identity-providers', {
@@ -560,31 +637,73 @@ class ViewTests(TestCase):
         self.assertEqual(res.status, '400 Bad Request')
         res.mustcontain('You do not have enough accounts to merge')
 
-        # so let's create another account with the same email
-        user2_id = self.db.users.insert({
-            'google_id': 'google1',
-            'screen_name': 'John Doe',
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': 'john@example.com',
-            'email_verified': True,
-        })
-        authorizator.store_user_authorization(['scope1'], {
-            'client_id': 'app2',
-            'user': {'_id': user2_id},
-            'redirect_uri': 'http://example.com/callback/2',
-            'response_type': 'code',
-        })
-        authorizator.store_user_authorization(['scope1'], {
-            'client_id': 'app3',
-            'user': {'_id': user2_id},
-            'redirect_uri': 'http://example.com/callback/3',
-            'response_type': 'code',
-        })
-        self.db.passwords.insert({
-            'owner': user2_id,
-            'password': 'secret2',
-        })
+    def test_identity_providers_two_accounts_only_one_selected(self):
+        user1_id = create_and_login_user(self.testapp,
+                                         email='john@example.com',
+                                         email_verified=True)
+        user2_id = create_user(email='john@example.com',
+                               email_verified=True,
+                               provider='google',
+                               external_id='google1')
+        app1 = Application(name='Test Application',
+                           callback_url='https://example.com/callback/1')
+        app2 = Application(name='Test Application',
+                           callback_url='https://example.com/callback/2')
+        app3 = Application(name='Test Application',
+                           callback_url='https://example.com/callback/3')
+        admin = User(screen_name='Alice doe',
+                     first_name='Alice',
+                     last_name='Doe',
+                     email='alice@example.com')
+        admin.applications.append(app1)
+        admin.applications.append(app2)
+        admin.applications.append(app3)
+
+        auth_app1 = AuthorizedApplication(
+            scope=['scope1'],
+            response_type='code',
+            redirect_uri='http://example.com/callback/1',
+            application=app1,
+            user_id=user1_id,
+        )
+        auth_app2 = AuthorizedApplication(
+            scope=['scope1'],
+            response_type='code',
+            redirect_uri='http://example.com/callback/2',
+            application=app2,
+            user_id=user1_id,
+        )
+        auth_app3 = AuthorizedApplication(
+            scope=['scope1'],
+            response_type='code',
+            redirect_uri='http://example.com/callback/2',
+            application=app2,
+            user_id=user2_id,
+        )
+        auth_app4 = AuthorizedApplication(
+            scope=['scope1'],
+            response_type='code',
+            redirect_uri='http://example.com/callback/3',
+            application=app3,
+            user_id=user2_id,
+        )
+        password1 = Password(secret='s3cr3t',
+                             user_id=user1_id)
+        password2 = Password(secret='s3cr3t',
+                             user_id=user2_id)
+
+        with transaction.manager:
+            Session.add(admin)
+            Session.add(app1)
+            Session.add(app2)
+            Session.add(app3)
+            Session.add(auth_app1)
+            Session.add(auth_app2)
+            Session.add(auth_app3)
+            Session.add(auth_app4)
+            Session.add(password1)
+            Session.add(password2)
+            Session.flush()
 
         # now the profile view should say I can merge my accounts
         res = self.testapp.get('/identity-providers')
@@ -602,11 +721,82 @@ class ViewTests(TestCase):
         }, status=302)
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/identity-providers')
-        self.assertEqual(2, self.db.users.count())
-        self.assertEqual(1, self.db.passwords.find(
-            {'owner': user1_id}).count())
-        self.assertEqual(1, self.db.passwords.find(
-            {'owner': user2_id}).count())
+        self.assertEqual(3, Session.query(User).count())
+        self.assertEqual(1, Session.query(Password).filter(
+            Password.user_id==user1_id).count())
+        self.assertEqual(1, Session.query(Password).filter(
+            Password.user_id==user2_id).count())
+
+    def test_identity_providers_two_accounts_two_selected(self):
+        user1_id = create_and_login_user(self.testapp,
+                                         email='john@example.com',
+                                         email_verified=True)
+        user2_id = create_user(email='john@example.com',
+                               email_verified=True,
+                               provider='google',
+                               external_id='google1')
+        app1 = Application(name='Test Application',
+                           callback_url='https://example.com/callback/1')
+        app2 = Application(name='Test Application',
+                           callback_url='https://example.com/callback/2')
+        app3 = Application(name='Test Application',
+                           callback_url='https://example.com/callback/3')
+        admin = User(screen_name='Alice doe',
+                     first_name='Alice',
+                     last_name='Doe',
+                     email='alice@example.com')
+        admin.applications.append(app1)
+        admin.applications.append(app2)
+        admin.applications.append(app3)
+
+        auth_app1 = AuthorizedApplication(
+            scope=['scope1'],
+            response_type='code',
+            redirect_uri='http://example.com/callback/1',
+            application=app1,
+            user_id=user1_id,
+        )
+        auth_app2 = AuthorizedApplication(
+            scope=['scope1'],
+            response_type='code',
+            redirect_uri='http://example.com/callback/2',
+            application=app2,
+            user_id=user1_id,
+        )
+        auth_app3 = AuthorizedApplication(
+            scope=['scope1'],
+            response_type='code',
+            redirect_uri='http://example.com/callback/2',
+            application=app2,
+            user_id=user2_id,
+        )
+        auth_app4 = AuthorizedApplication(
+            scope=['scope1'],
+            response_type='code',
+            redirect_uri='http://example.com/callback/3',
+            application=app3,
+            user_id=user2_id,
+        )
+        password1 = Password(secret='s3cr3t',
+                             user_id=user1_id)
+        password2 = Password(secret='s3cr3t',
+                             user_id=user2_id)
+
+        with transaction.manager:
+            Session.add(admin)
+            Session.add(app1)
+            Session.add(app2)
+            Session.add(app3)
+            Session.add(auth_app1)
+            Session.add(auth_app2)
+            Session.add(auth_app3)
+            Session.add(auth_app4)
+            Session.add(password1)
+            Session.add(password2)
+            Session.flush()
+            app1_id = app1.id
+            app2_id = app2.id
+            app3_id = app3.id
 
         # let's merge them
         res = self.testapp.post('/identity-providers', {
@@ -618,24 +808,34 @@ class ViewTests(TestCase):
         self.assertEqual(res.location, 'http://localhost/identity-providers')
 
         # the accounts have been merged
-        self.assertEqual(1, self.db.users.count())
-        user1_refreshed = self.db.users.find_one({'_id': user1_id})
-        self.assertEqual(user1_refreshed['google_id'], 'google1')
-        auths = authorizator.get_user_authorizations(user1_refreshed)
-        for real, expected in zip(auths, ['app1', 'app2', 'app3']):
-            self.assertEqual(real['client_id'], expected)
+        self.assertEqual(2, Session.query(User).count())
+        user1_refreshed = Session.query(User).filter(User.id==user1_id).one()
+        google_identity = Session.query(ExternalIdentity).filter(
+            ExternalIdentity.user==user1_refreshed,
+            ExternalIdentity.provider=='google',
+        ).one()
+        self.assertEqual(google_identity.external_id, 'google1')
+        auths = Session.query(AuthorizedApplication).filter(
+            AuthorizedApplication.user==user1_refreshed,
+        )
+        client_ids = [auth_app.application.id for auth_app in auths]
+        self.assertEqual(set(client_ids), set([app1_id, app2_id, app3_id]))
 
-        user2_refreshed = self.db.users.find_one({'_id': user2_id})
+        try:
+            user2_refreshed = Session.query(User).filter(User.id==user2_id).one()
+        except NoResultFound:
+            user2_refreshed = None
         self.assertEqual(user2_refreshed, None)
 
-        self.assertEqual(2, self.db.passwords.find(
-            {'owner': user1_id}).count())
+        self.assertEqual(2, Session.query(Password).filter(
+            Password.user_id==user1_id).count())
 
-    def test_google_analytics_preference(self):
+    def test_google_analytics_preference_no_preference_parameter(self):
         res = self.testapp.post('/google-analytics-preference', status=400)
         self.assertEqual(res.status, '400 Bad Request')
         res.mustcontain('Missing preference parameter')
 
+    def test_google_analytics_preference_anonymous_users(self):
         # Anonymous users save the preference in the session
         res = self.testapp.post('/google-analytics-preference', {'yes': 'Yes'})
         self.assertEqual(res.status, '200 OK')
@@ -647,29 +847,21 @@ class ViewTests(TestCase):
         self.assertEqual(res.json, {'allow': False})
         self.assertEqual(self.get_session(res)[USER_ATTR], False)
 
+    def test_google_analytics_preference_auth_users(self):
         # Authenticated users save the preference in the database
-        # Log in
-        user_id = self.db.users.insert({
-            'twitter_id': 'twitter1',
-            'screen_name': 'John Doe',
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': 'john@example.com',
-            'email_verified': True,
-        })
-        self.testapp.get('/__login/' + str(user_id))
+        user_id = create_and_login_user(self.testapp, email='john@example.com')
 
         res = self.testapp.post('/google-analytics-preference', {'yes': 'Yes'})
         self.assertEqual(res.status, '200 OK')
         self.assertEqual(res.json, {'allow': True})
-        user_refreshed = self.db.users.find_one({'_id': user_id})
-        self.assertEqual(user_refreshed[USER_ATTR], True)
+        user_refreshed = Session.query(User).filter(User.id==user_id).one()
+        self.assertEqual(user_refreshed.allow_google_analytics, True)
 
         res = self.testapp.post('/google-analytics-preference', {'no': 'No'})
         self.assertEqual(res.status, '200 OK')
         self.assertEqual(res.json, {'allow': False})
-        user_refreshed = self.db.users.find_one({'_id': user_id})
-        self.assertEqual(user_refreshed[USER_ATTR], False)
+        user_refreshed = Session.query(User).filter(User.id==user_id).one()
+        self.assertEqual(user_refreshed.allow_google_analytics, False)
 
 
 class RESTViewTests(TestCase):
@@ -678,22 +870,20 @@ class RESTViewTests(TestCase):
         super(RESTViewTests, self).setUp()
 
         self.access_code = '1234'
-        date = datetime.datetime(2012, 12, 12, 12, 12)
-        self.user_id = self.db.users.insert({
-            'provider_user_id': 'user1',
-            'screen_name': 'John Doe',
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': 'john@example.com',
-            'email_verified': True,
-            'allow_google_analytics': True,
-            'date_joined': date,
-            'last_login': date,
-        })
-        self.db.applications.insert({
-            'name': 'test-app',
-            'client_id': 'client1',
-        })
+        self.user_id = create_user(email='john@example.com',
+                                   email_verified=True,
+                                   allow_google_analytics=True)
+        app = Application(name='test-app')
+        admin = User(screen_name='Alice doe',
+                     first_name='Alice',
+                     last_name='Doe',
+                     email='alice@example.com')
+        admin.applications.append(app)
+        with transaction.manager:
+            Session.add(app)
+            Session.add(admin)
+            Session.flush()
+            self.application_id = app.id
 
     def test_user_options(self):
         res = self.testapp.options('/user')
@@ -706,32 +896,33 @@ class RESTViewTests(TestCase):
 
     @freeze_time('2014-02-23 08:00:00')
     def test_user_get(self):
-        expiration = datetime.datetime(2014, 2, 23, 9, 0, tzinfo=utc)
+        expiration = datetime.datetime(2014, 2, 23, 9, 0)
 
-        self.db.access_codes.insert({
-            'access_token': self.access_code,
-            'type': 'Bearer',
-            'expiration': expiration,
-            'user_id': self.user_id,
-            'scope': 'read-userinfo',
-            'client_id': 'client1',
-        })
+        access_code = AccessCode(code=self.access_code,
+                                 code_type='Bearer',
+                                 expiration=expiration,
+                                 scope=['read-userinfo'],
+                                 user_id=self.user_id,
+                                 application_id=self.application_id)
+        with transaction.manager:
+            Session.add(access_code)
+            Session.flush()
 
         auth_header = {'Authorization': 'Bearer %s' % self.access_code}
 
         res = self.testapp.get('/user', headers=auth_header)
         self.assertEqual(res.status, '200 OK')
         self.assertEqual(res.json, {
-            '_id': str(self.user_id),
-            'provider_user_id': 'user1',
+            'id': self.user_id,
             'screen_name': 'John Doe',
             'first_name': 'John',
             'last_name': 'Doe',
             'email': 'john@example.com',
             'email_verified': True,
             'allow_google_analytics': True,
-            'date_joined': '2012-12-12T12:12:00+00:00',
-            'last_login': '2012-12-12T12:12:00+00:00',
+            'send_passwords_periodically': False,
+            'creation': '2012-12-12T12:12:00',
+            'last_login': '2012-12-12T12:12:00',
         })
 
 
@@ -743,28 +934,8 @@ class PreferencesTests(TestCase):
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Log in')
 
-    def _login(self):
-        # Log in
-        date = datetime.datetime(2012, 12, 12, 12, 12)
-
-        user_id = self.db.users.insert({
-            'twitter_id': 'twitter1',
-            'screen_name': 'John Doe',
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': '',
-            'email_verified': False,
-            'date_joined': date,
-            'last_login': date,
-            'allow_google_analytics': False,
-        })
-
-        self.testapp.get('/__login/' + str(user_id))
-
-        return user_id
-
     def test_backup_form_messages(self):
-        self._login()
+        create_and_login_user(self.testapp, allow_google_analytics=False)
         res = self.testapp.get('/preferences')
         self.assertEqual(res.status, '200 OK')
         res.mustcontain(
@@ -775,7 +946,7 @@ class PreferencesTests(TestCase):
         )
 
     def test_save_changes(self):
-        user_id = self._login()
+        user_id = create_and_login_user(self.testapp, allow_google_analytics=False)
         res = self.testapp.post('/preferences', {
             'submit': 'Save changes',
             'allow_google_analytics': 'true',
@@ -784,12 +955,12 @@ class PreferencesTests(TestCase):
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/preferences')
         # check that the user has changed
-        new_user = self.db.users.find_one({'_id': user_id})
-        self.assertEqual(new_user['allow_google_analytics'], True)
-        self.assertEqual(new_user['send_passwords_periodically'], False)
+        new_user = Session.query(User).filter(User.id==user_id).one()
+        self.assertEqual(new_user.allow_google_analytics, True)
+        self.assertEqual(new_user.send_passwords_periodically, False)
 
     def test_form_fail(self):
-        self._login()
+        create_and_login_user(self.testapp, allow_google_analytics=False)
         # make the form fail
         with patch('deform.Form.validate') as fake:
             fake.side_effect = DummyValidationFailure('f', 'c', 'e')
@@ -797,17 +968,3 @@ class PreferencesTests(TestCase):
                 'submit': 'Save Changes',
             })
             self.assertEqual(res.status, '200 OK')
-
-    def test_db_fail(self):
-        user_id = self._login()
-        new_user = self.db.users.find_one({'_id': user_id})
-        # make the db fail
-        with patch('yithlibraryserver.db.MongoDB.get_database') as fake:
-            fake.return_value = BadDB(new_user)
-            res = self.testapp.post('/preferences', {
-                'submit': 'Save changes',
-                'allow_google_analytics': 'true',
-                'send_passwords_periodically': 'false',
-            })
-            self.assertEqual(res.status, '200 OK')
-            res.mustcontain('There were an error while saving your changes')

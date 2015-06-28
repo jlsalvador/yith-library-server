@@ -55,7 +55,7 @@ class Gravatar(object):
         if user is None:
             return None
 
-        email = user.get('email', '')
+        email = user.email
         if not email:
             return None
 

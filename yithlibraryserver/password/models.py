@@ -18,89 +18,52 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
+from datetime import datetime
 
-class PasswordsManager(object):
+from pyramid_sqlalchemy import BaseObject
 
-    def __init__(self, db):
-        self.db = db
+from sqlalchemy import Column, DateTime, Integer, String, Text
+from sqlalchemy import ForeignKey, func
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy.orm import relationship, backref
 
-    def create(self, user, password):
-        """Creates and returns a new password or a set of passwords.
 
-        Stores the password in the database for this specific user
-        and returns a new dict with the 'owner' and '_id' fields
-        filled.
+def now():
+    return datetime.utcnow()
 
-        If password is a list, do the same with each password in
-        this list.
-        """
-        if isinstance(password, dict):
-            if password:
-                new_password = dict(password)  # copy since we are changing this object
-                new_password['owner'] = user['_id']
-                _id = self.db.passwords.insert(new_password)
-                new_password['_id'] = _id
-                return new_password
-        else:
-            new_passwords = []  # copy since we are changing this object
-            for p in password:
-                if p:
-                    p = dict(p)
-                    p['owner'] = user['_id']
-                    new_passwords.append(p)
 
-            if new_passwords:
+class Password(BaseObject):
+    __tablename__ = 'passwords'
 
-                _ids = self.db.passwords.insert(new_passwords)
+    id = Column(UUID, primary_key=True, default=func.uuid_generate_v4())
+    creation = Column(DateTime, nullable=False, default=now)
+    modification = Column(DateTime, nullable=False, default=now, onupdate=now)
 
-                for i in range(len(new_passwords)):
-                    new_passwords[i]['_id'] = _ids[i]
+    notes = Column(Text, nullable=False, default='')
+    tags = Column(ARRAY(Text, dimensions=1), nullable=False, default=[])
 
-                return new_passwords
+    secret = Column(String, nullable=False, default='')
+    account = Column(String, nullable=False, default='')
+    service = Column(String, nullable=False, default='')
+    expiration = Column(Integer, nullable=True)
 
-    def retrieve(self, user, _id=None):
-        """Return the user's passwords or just one.
+    user_id = Column(UUID, ForeignKey('users.id'), nullable=False)
+    user = relationship(
+        'User',
+        backref=backref('passwords', cascade='all, delete-orphan'),
+    )
 
-        If _id is None return the whole set of passwords for this
-        user. Otherwise, it returns the password with that _id.
-        """
-        if _id is None:
-            return self.db.passwords.find({'owner': user['_id']})
-        else:
-            return self.db.passwords.find_one({
-                '_id': _id,
-                'owner': user['_id'],
-            })
-
-    def update(self, user, _id, password):
-        """Update a password in the database.
-
-        Return the updated password on success or None if the original
-        password does not exist.
-        """
-        new_password = dict(password)  # copy since we are changing this object
-        new_password['owner'] = user['_id']
-        result = self.db.passwords.update({
-            '_id': _id,
-            'owner': user['_id'],
-        }, new_password)
-        new_password['_id'] = _id
-
-        # result['n'] is the number of documents updated
-        # See <http://www.mongodb.org/display/DOCS/getLastError+Command#getLastErrorCommand-ReturnValue
-        if result['n'] == 1:
-            return new_password
-        else:
-            return None
-
-    def delete(self, user, _id=None):
-        """Deletes a password from the database or the whole set for this user.
-
-        Returns True if the delete is succesfull or False otherwise.
-        """
-        query = {'owner': user['_id']}
-        if _id is not None:
-            query['_id'] = _id
-
-        result = self.db.passwords.remove(query)
-        return result['n'] > 0
+    def as_dict(self):
+        return dict(
+            id=self.id,
+            creation=self.creation,
+            modification=self.modification,
+            notes=self.notes,
+            tags=self.tags,
+            secret=self.secret,
+            account=self.account,
+            service=self.service,
+            expiration=self.expiration,
+            user=self.user_id,
+            owner=self.user_id,  # backwards compatibility
+        )

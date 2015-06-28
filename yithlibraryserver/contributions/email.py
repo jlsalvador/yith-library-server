@@ -20,12 +20,22 @@ from yithlibraryserver.email import send_email, send_email_to_admins
 
 
 def send_thankyou_email(request, donation):
+    context = {
+        'first_name': donation.first_name,
+        'amount': donation.amount,
+        'street': donation.street,
+        'zipcode': donation.zipcode,
+        'city': donation.city,
+        'state': donation.state,
+        'country': donation.country,
+        'send_sticker': donation.send_sticker,
+    }
     return send_email(
         request,
         'yithlibraryserver.contributions:templates/email_thankyou',
-        donation,
+        context,
         'Thanks for your contribution!',
-        [donation['email']],
+        [donation.email],
     )
 
 
@@ -33,7 +43,19 @@ def send_notification_to_admins(request, donation):
     context = {
         'home_link': request.route_url('home'),
     }
-    context.update(donation)
+    context.update({
+        'first_name': donation.first_name,
+        'last_name': donation.last_name,
+        'email': donation.email,
+        'amount': donation.amount,
+        'street': donation.street,
+        'zipcode': donation.zipcode,
+        'city': donation.city,
+        'state': donation.state,
+        'country': donation.country,
+        'send_sticker': donation.send_sticker,
+        'user': donation.user_id,
+    })
     return send_email_to_admins(
         request,
         'yithlibraryserver.contributions:templates/email_admin_notification',

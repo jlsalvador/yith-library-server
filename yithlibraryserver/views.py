@@ -90,9 +90,9 @@ def contact(request):
 
     initial = {}
     if request.user is not None:
-        initial['name'] = request.user.get('first_name', '')
-        if request.user.get('email_verified', False):
-            initial['email'] = request.user.get('email', '')
+        initial['name'] = request.user.first_name
+        if request.user.email_verified:
+            initial['email'] = request.user.email
 
     return {'form': form.render(initial)}
 

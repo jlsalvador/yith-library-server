@@ -50,6 +50,4 @@ def setup_simple_command(name, description):
 
 
 def get_user_display_name(user):
-    return '%s %s <%s>' % (user.get('first_name', ''),
-                           user.get('last_name', ''),
-                           user.get('email', ''))
+    return '%s %s <%s>' % (user.first_name, user.last_name, user.email)

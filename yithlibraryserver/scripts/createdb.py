@@ -1,5 +1,5 @@
 # Yith Library Server is a password storage server.
-# Copyright (C) 2012-2013 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
+# Copyright (C) 2015 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
 #
 # This file is part of Yith Library Server.
 #
@@ -16,17 +16,27 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
-import datetime
+from pyramid_sqlalchemy import BaseObject
 
-from pyramid.renderers import JSON
-
-json_renderer = JSON()
+from yithlibraryserver.scripts.utils import setup_simple_command
 
 
-def datetime_adapter(obj, request):
-    return obj.isoformat()
-json_renderer.add_adapter(datetime.datetime, datetime_adapter)
+def createdb():
+    result = setup_simple_command(
+        "createdb",
+        "Initialize the DB with DDL statements.",
+    )
+    if isinstance(result, int):
+        return result
+    else:
+        settings, closer, env, args = result
+
+    try:
+        BaseObject.metadata.create_all()
+
+    finally:
+        closer()
 
 
-def datetime_parser(datestring):
-    return datetime.datetime.strptime(datestring, "%Y-%m-%dT%H:%M:%S")
+if __name__ == '__main__':  # pragma: no cover
+    createdb()

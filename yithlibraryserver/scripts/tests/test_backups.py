@@ -21,48 +21,53 @@ import sys
 
 from freezegun import freeze_time
 
+from pyramid_sqlalchemy import Session
+
+import transaction
+
 from yithlibraryserver.compat import StringIO
 from yithlibraryserver.scripts.backups import get_all_users
 from yithlibraryserver.scripts.backups import send_backups_via_email
 from yithlibraryserver.scripts.testing import ScriptTests
+from yithlibraryserver.user.models import User
 
 
 class GetAllUsersTests(ScriptTests):
 
     def test_get_all_users(self):
         d = datetime.datetime
-        # Add some users
-        self.add_passwords(self.db.users.insert({
-            'first_name': 'John1',
-            'last_name': 'Doe',
-            'date_joined': d(2012, 12, 12, 9, 10, 0),
-            'email': 'john1@example.com',
-            'email_verified': False,
-            'send_passwords_periodically': False,
-        }), 10)
+        with transaction.manager:
+            user1 = User(first_name='John1',
+                         last_name='Doe',
+                         creation=d(2012, 12, 12, 9, 10, 0),
+                         email='john1@example.com',
+                         email_verified=False,
+                         send_passwords_periodically=False)
+            Session.add(user1)
+            self.add_passwords(user1, 10)
 
-        self.add_passwords(self.db.users.insert({
-            'first_name': 'John2',
-            'last_name': 'Doe',
-            'date_joined': d(2013, 1, 2, 13, 10, 0),
-            'email': 'john2@example.com',
-            'email_verified': True,
-            'send_passwords_periodically': True,
-        }), 10)
+            user2 = User(first_name='John2',
+                         last_name='Doe',
+                         creation=d(2013, 1, 2, 13, 10, 0),
+                         email='john2@example.com',
+                         email_verified=True,
+                         send_passwords_periodically=True)
+            Session.add(user2)
+            self.add_passwords(user2, 10)
 
-        self.add_passwords(self.db.users.insert({
-            'first_name': 'John3',
-            'last_name': 'Doe',
-            'date_joined': d(2014, 6, 20, 10, 58, 10),
-            'email': 'john3@example.com',
-            'email_verified': True,
-            'send_passwords_periodically': True,
-        }), 10)
+            user3 = User(first_name='John3',
+                         last_name='Doe',
+                         creation=d(2014, 6, 20, 10, 58, 10),
+                         email='john2@example.com',
+                         email_verified=True,
+                         send_passwords_periodically=True)
+            Session.add(user3)
+            self.add_passwords(user3, 10)
 
         when = datetime.datetime(2012, 10, 12, 10, 0, 0)
-        users = tuple(get_all_users(self.db, when))
+        users = tuple(get_all_users(when))
         self.assertEqual(len(users), 1)
-        self.assertEqual(users[0]['first_name'], 'John3')
+        self.assertEqual(users[0].first_name, 'John3')
 
 
 class BackupsTests(ScriptTests):
@@ -102,34 +107,38 @@ class BackupsTests(ScriptTests):
         self.assertEqual(stdout, '')
 
     def test_send_specific_user(self):
-        self.add_passwords(self.db.users.insert({
-            'first_name': 'John1',
-            'last_name': 'Doe',
-            'email': '',
-            'email_verified': False,
-            'send_passwords_periodically': False,
-        }), 10)
-        self.add_passwords(self.db.users.insert({
-            'first_name': 'John2',
-            'last_name': 'Doe',
-            'email': 'john2@example.com',
-            'email_verified': True,
-            'send_passwords_periodically': False,
-        }), 10)
-        self.add_passwords(self.db.users.insert({
-            'first_name': 'John3',
-            'last_name': 'Doe',
-            'email': 'john3@example.com',
-            'email_verified': True,
-            'send_passwords_periodically': True,
-        }), 10)
-        self.add_passwords(self.db.users.insert({
-            'first_name': 'John4',
-            'last_name': 'Doe',
-            'email': 'john4@example.com',
-            'email_verified': True,
-            'send_passwords_periodically': True,
-        }), 10)
+        with transaction.manager:
+            user1 = User(first_name='John1',
+                         last_name='Doe',
+                         email='',
+                         email_verified=False,
+                         send_passwords_periodically=False)
+            Session.add(user1)
+            self.add_passwords(user1, 10)
+
+            user2 = User(first_name='John2',
+                         last_name='Doe',
+                         email='john2@exaple.com',
+                         email_verified=True,
+                         send_passwords_periodically=False)
+            Session.add(user2)
+            self.add_passwords(user2, 10)
+
+            user3 = User(first_name='John3',
+                         last_name='Doe',
+                         email='john3@example.com',
+                         email_verified=True,
+                         send_passwords_periodically=True)
+            Session.add(user3)
+            self.add_passwords(user3, 10)
+
+            user4 = User(first_name='John4',
+                         last_name='Doe',
+                         email='john4@example.com',
+                         email_verified=True,
+                         send_passwords_periodically=True)
+            Session.add(user4)
+            self.add_passwords(user4, 10)
 
         sys.argv = ['notused', self.conf_file_path, 'john3@example.com']
         sys.stdout = StringIO()
@@ -144,32 +153,33 @@ class BackupsTests(ScriptTests):
     def test_several_users_first_of_month(self):
         d = datetime.datetime
         # Add some users
-        self.add_passwords(self.db.users.insert({
-            'first_name': 'John1',
-            'last_name': 'Doe',
-            'date_joined': d(2012, 12, 12, 9, 10, 0),
-            'email': 'john1@example.com',
-            'email_verified': False,
-            'send_passwords_periodically': False,
-        }), 10)
+        with transaction.manager:
+            user1 = User(first_name='John1',
+                         last_name='Doe',
+                         creation=d(2012, 12, 12, 9, 10, 0),
+                         email='john1@example.com',
+                         email_verified=False,
+                         send_passwords_periodically=False)
+            Session.add(user1)
+            self.add_passwords(user1, 10)
 
-        self.add_passwords(self.db.users.insert({
-            'first_name': 'John2',
-            'last_name': 'Doe',
-            'date_joined': d(2013, 1, 2, 13, 10, 0),
-            'email': 'john2@example.com',
-            'email_verified': True,
-            'send_passwords_periodically': True,
-        }), 10)
+            user2 = User(first_name='John2',
+                         last_name='Doe',
+                         creation=d(2013, 1, 2, 13, 10, 0),
+                         email='john2@exaple.com',
+                         email_verified=True,
+                         send_passwords_periodically=False)
+            Session.add(user2)
+            self.add_passwords(user2, 10)
 
-        self.add_passwords(self.db.users.insert({
-            'first_name': 'John3',
-            'last_name': 'Doe',
-            'date_joined': d(2014, 6, 20, 10, 58, 10),
-            'email': 'john3@example.com',
-            'email_verified': True,
-            'send_passwords_periodically': True,
-        }), 10)
+            user3 = User(first_name='John3',
+                         last_name='Doe',
+                         creation=d(2014, 6, 20, 10, 58, 10),
+                         email='john3@example.com',
+                         email_verified=True,
+                         send_passwords_periodically=True)
+            Session.add(user3)
+            self.add_passwords(user3, 10)
 
         sys.argv = ['notused', self.conf_file_path]
         sys.stdout = StringIO()
@@ -184,32 +194,33 @@ class BackupsTests(ScriptTests):
     def test_several_users_not_first_of_month(self):
         d = datetime.datetime
         # Add some users
-        self.add_passwords(self.db.users.insert({
-            'first_name': 'John1',
-            'last_name': 'Doe',
-            'date_joined': d(2012, 12, 12, 9, 10, 0),
-            'email': 'john1@example.com',
-            'email_verified': False,
-            'send_passwords_periodically': False,
-        }), 10)
+        with transaction.manager:
+            user1 = User(first_name='John1',
+                         last_name='Doe',
+                         creation=d(2012, 12, 12, 9, 10, 0),
+                         email='john1@example.com',
+                         email_verified=False,
+                         send_passwords_periodically=False)
+            Session.add(user1)
+            self.add_passwords(user1, 10)
 
-        self.add_passwords(self.db.users.insert({
-            'first_name': 'John2',
-            'last_name': 'Doe',
-            'date_joined': d(2013, 1, 2, 13, 10, 0),
-            'email': 'john2@example.com',
-            'email_verified': True,
-            'send_passwords_periodically': True,
-        }), 10)
+            user2 = User(first_name='John2',
+                         last_name='Doe',
+                         creation=d(2013, 1, 2, 13, 10, 0),
+                         email='john2@exaple.com',
+                         email_verified=True,
+                         send_passwords_periodically=False)
+            Session.add(user2)
+            self.add_passwords(user2, 10)
 
-        self.add_passwords(self.db.users.insert({
-            'first_name': 'John3',
-            'last_name': 'Doe',
-            'date_joined': d(2014, 6, 20, 10, 58, 10),
-            'email': 'john3@example.com',
-            'email_verified': True,
-            'send_passwords_periodically': True,
-        }), 10)
+            user3 = User(first_name='John3',
+                         last_name='Doe',
+                         creation=d(2014, 6, 20, 10, 58, 10),
+                         email='john3@example.com',
+                         email_verified=True,
+                         send_passwords_periodically=True)
+            Session.add(user3)
+            self.add_passwords(user3, 10)
 
         sys.argv = ['notused', self.conf_file_path]
         sys.stdout = StringIO()

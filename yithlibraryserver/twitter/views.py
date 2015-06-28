@@ -106,7 +106,7 @@ def twitter_callback(request):
     user_id = response_args['user_id']
     screen_name = response_args['screen_name']
 
-    existing_user = user_from_provider_id(request.db, 'twitter', user_id)
+    existing_user = user_from_provider_id('twitter', user_id)
     if existing_user is None:
         # fetch Twitter info only if this is the first time for
         # the user sice Twitter has very strong limits for using

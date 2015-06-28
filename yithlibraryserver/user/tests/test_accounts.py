@@ -25,343 +25,127 @@ from pyramid.testing import DummyRequest
 
 from pyramid_mailer import get_mailer
 
-from yithlibraryserver.db import MongoDB
-from yithlibraryserver.user.accounts import get_available_providers
-from yithlibraryserver.user.accounts import get_providers, get_n_passwords
-from yithlibraryserver.user.accounts import get_accounts, merge_accounts
-from yithlibraryserver.user.accounts import merge_users
+from pyramid_sqlalchemy import metadata
+from pyramid_sqlalchemy import Session
+
+from sqlalchemy.orm.exc import NoResultFound
+
+import transaction
+
+from yithlibraryserver.password.models import Password
+from yithlibraryserver.testing import (
+    get_test_db_uri,
+    sqlalchemy_setup,
+    sqlalchemy_teardown,
+)
+from yithlibraryserver.user.accounts import merge_accounts, merge_users
 from yithlibraryserver.user.accounts import notify_admins_of_account_removal
-from yithlibraryserver.testing import MONGO_URI, TestCase, clean_db
-
-
-class AccountTests(TestCase):
-
-    def test_get_available_providers(self):
-        self.assertEqual(('facebook', 'google', 'twitter', 'persona', 'liveconnect'),
-                         get_available_providers())
-
-    def test_get_providers(self):
-        self.assertEqual([], get_providers({}, ''))
-        self.assertEqual([
-            {'name': 'facebook', 'is_current': True}
-        ], get_providers({'facebook_id': 1234}, 'facebook'))
-        self.assertEqual([{
-            'name': 'facebook',
-            'is_current': True,
-        }, {
-            'name': 'google',
-            'is_current': False,
-        }, {
-            'name': 'twitter',
-            'is_current': False,
-        }], get_providers({
-            'facebook_id': 1234,
-            'google_id': 4321,
-            'twitter_id': 6789
-        }, 'facebook'))
-        self.assertEqual([], get_providers({'myspace_id': 1234}, ''))
-
-    def test_n_passwords(self):
-        self.assertEqual(0, get_n_passwords(self.db, {'_id': 1}))
-
-        self.db.passwords.insert({'password': 'secret', 'owner': 1})
-        self.assertEqual(1, get_n_passwords(self.db, {'_id': 1}))
-
-        self.db.passwords.insert({'password2': 'secret2', 'owner': 1})
-        self.assertEqual(2, get_n_passwords(self.db, {'_id': 1}))
-        self.db.passwords.insert({'password2': 'secret2', 'owner': 2})
-        self.assertEqual(2, get_n_passwords(self.db, {'_id': 1}))
-
-    def test_get_accounts_empty_user(self):
-        self.assertEqual([], get_accounts(self.db, {}, ''))
-
-    def test_get_accounts_empty_provider(self):
-        self.assertEqual([{
-            'providers': [],
-            'is_current': False,
-            'passwords': 0,
-            'id': '',
-            'is_verified': False,
-        }], get_accounts(self.db, {
-            'email': 'john@example.com',
-            '_id': '',
-        }, ''))
-
-    def test_get_accounts_one_user_no_provider(self):
-        user_id = self.db.users.insert({'email': 'john@example.com'})
-        self.assertEqual([{
-            'providers': [],
-            'is_current': False,
-            'passwords': 0,
-            'id': '',
-            'is_verified': False,
-        }, {
-            'providers': [],
-            'is_current': False,
-            'passwords': 0,
-            'id': str(user_id),
-            'is_verified': False,
-        }], get_accounts(self.db, {
-            'email': 'john@example.com',
-            '_id': '',
-        }, ''))
-
-    def test_get_accounts_one_user_with_provider(self):
-        user_id = self.db.users.insert({
-            'email': 'john@example.com',
-            'twitter_id': 1234,
-        })
-        self.assertEqual([{
-            'providers': [],
-            'is_current': False,
-            'passwords': 0,
-            'id': '',
-            'is_verified': False,
-        }, {
-            'providers': [{
-                'name': 'twitter',
-                'is_current': False,
-            }],
-            'is_current': False,
-            'passwords': 0,
-            'id': str(user_id),
-            'is_verified': False,
-        }], get_accounts(self.db, {
-            'email': 'john@example.com',
-            '_id': '',
-        }, ''))
-
-    def test_get_accounts_one_user_with_provider_email_verified(self):
-        user_id = self.db.users.insert({
-            'email': 'john@example.com',
-            'twitter_id': 1234,
-            'email_verified': True,
-        })
-        self.assertEqual([{
-            'providers': [],
-            'is_current': False,
-            'passwords': 0,
-            'id': '',
-            'is_verified': False,
-        }, {
-            'providers': [{
-                'name': 'twitter',
-                'is_current': True,
-            }],
-            'passwords': 0,
-            'id': str(user_id),
-            'is_current': True,
-            'is_verified': True,
-        }], get_accounts(self.db, {
-            'email': 'john@example.com',
-            '_id': '',
-        }, 'twitter'))
-
-    def test_get_accounts_user_with_passwords(self):
-        user_id = self.db.users.insert({
-            'email': 'john@example.com',
-            'twitter_id': 1234,
-            'email_verified': True,
-        })
-        self.db.passwords.insert({'password': 'secret', 'owner': user_id})
-        self.assertEqual([{
-            'providers': [],
-            'is_current': False,
-            'passwords': 0,
-            'id': '',
-            'is_verified': False,
-        }, {
-            'providers': [{
-                'name': 'twitter',
-                'is_current': False,
-            }],
-            'passwords': 1,
-            'id': str(user_id),
-            'is_current': False,
-            'is_verified': True,
-        }], get_accounts(self.db, {
-            'email': 'john@example.com',
-            '_id': '',
-        }, 'google'))
-
-    def test_get_accounts_user_multiple_providers(self):
-        user_id = self.db.users.insert({
-            'email': 'john@example.com',
-            'twitter_id': 1234,
-            'google_id': 4321,
-            'email_verified': True,
-        })
-        self.db.passwords.insert({'password': 'secret', 'owner': user_id})
-
-        self.assertEqual([{
-            'providers': [],
-            'is_current': False,
-            'passwords': 0,
-            'id': '',
-            'is_verified': False,
-        }, {
-            'providers': [{
-                'name': 'google',
-                'is_current': True,
-            }, {
-                'name': 'twitter',
-                'is_current': False,
-            }],
-            'passwords': 1,
-            'id': str(user_id),
-            'is_current': True,
-            'is_verified': True,
-        }], get_accounts(self.db, {
-            'email': 'john@example.com',
-            '_id': '',
-        }, 'google'))
+from yithlibraryserver.user.models import ExternalIdentity, User
 
 
 class BaseMergeTests(unittest.TestCase):
 
     def setUp(self):
+        self.db_uri = get_test_db_uri()
+        self.db_context = sqlalchemy_setup(self.db_uri)
+
         self.config = testing.setUp()
-        mdb = MongoDB(MONGO_URI)
-        self.db = mdb.get_database()
+        self.config.include('yithlibraryserver.oauth2')
+        self.config.include('yithlibraryserver.password')
+        self.config.include('yithlibraryserver.user')
+
+        metadata.create_all()
 
     def tearDown(self):
         testing.tearDown()
-        clean_db(self.db)
-
-    def _add_authorized_app(self, user_id, client_id):
-        self.db.authorized_apps.insert({
-            'client_id': client_id,
-            'user': user_id,
-            'redirect_uri': 'http://example.com/callback',
-            'response_type': 'code',
-            'scope': 'scope1',
-        })
+        sqlalchemy_teardown(self.db_context)
 
 
 class MergeAccountsTests(BaseMergeTests):
 
     def test_merge_empty_user(self):
-        self.assertEqual(0, merge_accounts(self.db, {}, []))
-
-    def _create_master_user(self):
-        master_id = self.db.users.insert({
-            'email': 'john@example.com',
-            'twitter_id': 1234,
-        })
-        self._add_authorized_app(master_id, 'a')
-        self._add_authorized_app(master_id, 'b')
-        master_user = self.db.users.find_one({'_id': master_id})
-
-        self.db.passwords.insert({
-            'owner': master_id,
-            'password1': 'secret1',
-        })
-        return master_id, master_user
+        self.assertEqual(0, merge_accounts(None, []))
 
     def test_merge_with_itself(self):
-        master_id, master_user = self._create_master_user()
+        user = User()
+        Session.add(user)
+        Session.flush()
 
-        self.assertEqual(1, self.db.users.count())
-        self.assertEqual(0, merge_accounts(self.db, master_user,
-                                           [str(master_id)]))
-        master_user_reloaded = self.db.users.find_one({'_id': master_id})
-
-        self.assertEqual(master_user, master_user_reloaded)
-        self.assertEqual(1, self.db.users.count())
+        self.assertEqual(1, Session.query(User).count())
+        self.assertEqual(0, merge_accounts(user, [user.id]))
+        self.assertEqual(1, Session.query(User).count())
 
     def test_merge_with_invented_users(self):
-        master_id, master_user = self._create_master_user()
+        user = User()
+        Session.add(user)
+        Session.flush()
 
-        self.assertEqual(0, merge_accounts(self.db, master_user,
-                                           ['000000000000000000000000']))
-        master_user_reloaded = self.db.users.find_one({'_id': master_id})
-        self.assertEqual(master_user, master_user_reloaded)
-        self.assertEqual(1, self.db.users.count())
+        fake_id = '00000000-0000-0000-0000-000000000000'
+        self.assertEqual(1, Session.query(User).count())
+        self.assertEqual(0, merge_accounts(user, [fake_id]))
+        self.assertEqual(1, Session.query(User).count())
 
     def test_merge_valid_users(self):
-        master_id, master_user = self._create_master_user()
+        master_user = User()
+        Session.add(master_user)
 
-        # let's create valid users
-        other_id = self.db.users.insert({
-            'email': 'john@example.com',
-            'google_id': 4321,
-        })
-        self._add_authorized_app(other_id, 'b')
-        self._add_authorized_app(other_id, 'c')
-        self.assertEqual(2, self.db.users.count())
-        self.db.passwords.insert({
-            'owner': other_id,
-            'password2': 'secret2',
-        })
+        other_user = User()
+        Session.add(other_user)
 
-        self.assertEqual(1, merge_accounts(self.db, master_user,
-                                           [str(other_id)]))
-        master_user_reloaded = self.db.users.find_one({'_id': master_id})
-        self.assertEqual({
-            '_id': master_id,
-            'email': 'john@example.com',
-            'twitter_id': 1234,
-            'google_id': 4321,
-        }, master_user_reloaded)
-        self.assertEqual(1, self.db.users.count())
-        self.assertEqual(2,
-                         self.db.passwords.find({'owner': master_id}).count())
+        Session.flush()
+
+        self.assertEqual(2, Session.query(User).count())
+        self.assertEqual(1, merge_accounts(master_user, [other_user.id]))
+        self.assertEqual(1, Session.query(User).count())
 
 
 class MergeUsersTests(BaseMergeTests):
 
     def test_merge_users(self):
-        user1_id = self.db.users.insert({
-            'email': 'john@example.com',
-            'twitter_id': 1234,
-        })
-        self._add_authorized_app(user1_id, 'a')
-        self._add_authorized_app(user1_id, 'b')
-        self.db.passwords.insert({
-            'owner': user1_id,
-            'password': 'secret1',
-        })
-        self.db.passwords.insert({
-            'owner': user1_id,
-            'password': 'secret2',
-        })
-        user1 = self.db.users.find_one({'_id': user1_id})
+        with transaction.manager:
+            user1 = User(email='john@example.com')
+            identity1 = ExternalIdentity(provider='twitter', external_id='1234',
+                                     user=user1)
+            password1 = Password(secret='s3cr3t1', user=user1)
+            password2 = Password(secret='s3cr3t2', user=user1)
 
-        user2_id = self.db.users.insert({
-            'email': 'john@example.com',
-            'google_id': 4321,
-        })
-        self._add_authorized_app(user2_id, 'b')
-        self._add_authorized_app(user2_id, 'c')
-        self.db.passwords.insert({
-            'owner': user2_id,
-            'password': 'secret3',
-        })
-        self.db.passwords.insert({
-            'owner': user2_id,
-            'password': 'secret4',
-        })
-        user2 = self.db.users.find_one({'_id': user2_id})
+            user2 = User(email='john@example.com')
+            identity2 = ExternalIdentity(provider='google', external_id='4321',
+                                     user=user2)
+            password3 = Password(secret='s3cr3t3', user=user2)
+            password4 = Password(secret='s3cr3t4', user=user2)
 
-        merge_users(self.db, user1, user2)
-        self.assertEqual(4, self.db.passwords.find(
-            {'owner': user1_id}).count())
-        self.assertEqual(0, self.db.passwords.find(
-            {'owner': user2_id}).count())
-        self.assertEqual(None, self.db.users.find_one({'_id': user2_id}))
-        user1_refreshed = self.db.users.find_one({'_id': user1_id})
-        self.assertEqual(user1_refreshed, {
-            '_id': user1_id,
-            'email': 'john@example.com',
-            'twitter_id': 1234,
-            'google_id': 4321,
-        })
-        auths = self.db.authorized_apps.find({'user': user1_id})
-        for real, expected in zip(auths, ['a', 'b', 'c']):
-            self.assertEqual(real['client_id'], expected)
+            Session.add(user1)
+            Session.add(identity1)
+            Session.add(password1)
+            Session.add(password2)
+            Session.add(user2)
+            Session.add(identity2)
+            Session.add(password3)
+            Session.add(password4)
+            Session.flush()
+            user1_id = user1.id
+            user2_id = user2.id
 
-        auths = self.db.authorized_apps.find({'user': user2_id})
-        self.assertEqual(auths.count(), 0)
+        user1 = Session.query(User).filter(User.id==user1_id).one()
+        user2 = Session.query(User).filter(User.id==user2_id).one()
+        self.assertEqual(1, len(user1.identities))
+        self.assertEqual(4, Session.query(Password).count())
+
+        with transaction.manager:
+            merge_users(user1, user2)
+
+        self.assertEqual(4, Session.query(Password).count())
+        self.assertEqual(0, Session.query(Password).filter(
+            Password.user_id==user2_id).count())
+        try:
+            user2_refreshed = Session.query(User).filter(User.id==user2_id).one()
+        except NoResultFound:
+            user2_refreshed = None
+        self.assertEqual(user2_refreshed, None)
+
+        user1 = Session.query(User).filter(User.id==user1_id).one()
+        self.assertEqual(2, len(user1.identities))
 
 
 class AccountRemovalNotificationTests(unittest.TestCase):

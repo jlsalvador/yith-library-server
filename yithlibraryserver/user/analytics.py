@@ -36,19 +36,16 @@ class GoogleAnalytics(object):
         if self.request.user is None:
             return USER_ATTR not in self.request.session
         else:
-            return USER_ATTR not in self.request.user
+            return self.request.user.allow_google_analytics
 
     def show_in_session(self):
         return self.request.session.get(USER_ATTR, False)
 
     def show_in_user(self, user):
-        return user.get(USER_ATTR, False)
+        return user.allow_google_analytics
 
     def is_in_session(self):
         return USER_ATTR in self.request.session
-
-    def is_stored_in_user(self, user):
-        return USER_ATTR in user
 
     @property
     def show(self):
@@ -61,9 +58,6 @@ class GoogleAnalytics(object):
     def clean_session(self):
         if USER_ATTR in self.request.session:
             del self.request.session[USER_ATTR]
-
-    def get_user_attr(self, value):
-        return {USER_ATTR: value}
 
     @property
     def json(self):

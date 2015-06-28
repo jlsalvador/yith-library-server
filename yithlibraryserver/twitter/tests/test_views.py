@@ -1,7 +1,7 @@
 # Yith Library Server is a password storage server.
 # Copyright (C) 2012-2013 Yaco Sistemas
 # Copyright (C) 2012-2013 Alejandro Blanco Escudero <alejandro.b.e@gmail.com>
-# Copyright (C) 2012-2014 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
+# Copyright (C) 2012-2015 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
 #
 # This file is part of Yith Library Server.
 #
@@ -22,7 +22,12 @@ from freezegun import freeze_time
 import mock
 from mock import patch
 
+from pyramid_sqlalchemy import Session
+
+import transaction
+
 from yithlibraryserver import testing
+from yithlibraryserver.user.models import ExternalIdentity, User
 
 
 class ViewTests(testing.TestCase):
@@ -143,10 +148,14 @@ class ViewTests(testing.TestCase):
     @mock.patch('requests.post')
     def test_twitter_callback_existing_user(self, post_mock, get_mock):
         # good request, twitter is happy now. Existing user
-        user_id = self.db.users.insert({
-            'twitter_id': 'user1',
-            'screen_name': 'Johnny',
-        })
+        user = User(screen_name='Johnny')
+        identity = ExternalIdentity(user=user, provider='twitter', external_id='user1')
+
+        with transaction.manager:
+            Session.add(user)
+            Session.add(identity)
+            Session.flush()
+            user_id = user.id
 
         mock0 = mock.Mock()
         mock0.status_code = 200
@@ -181,18 +190,20 @@ class ViewTests(testing.TestCase):
 
         # even if the response from twitter included a different
         # screen_name, our user will not be updated
-        new_user = self.db.users.find_one({'_id': user_id})
-        self.assertEqual(new_user['screen_name'], 'Johnny')
+        new_user = Session.query(User).filter(User.id==user_id).one()
+        self.assertEqual(new_user.screen_name, 'Johnny')
 
     @freeze_time('2012-01-10 15:31:11')
     @mock.patch('requests.get')
     @mock.patch('requests.post')
     def test_twitter_callback_existing_user_remember_url(self, post_mock, get_mock):
         # good request, existing user, remember next_url
-        self.db.users.insert({
-            'twitter_id': 'user1',
-            'screen_name': 'Johnny',
-        })
+        user = User(screen_name='Johnny')
+        identity = ExternalIdentity(user=user, provider='twitter', external_id='user1')
+
+        with transaction.manager:
+            Session.add(user)
+            Session.add(identity)
 
         mock0 = mock.Mock()
         mock0.status_code = 200

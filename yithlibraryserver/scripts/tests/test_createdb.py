@@ -19,7 +19,7 @@
 import sys
 
 from yithlibraryserver.compat import StringIO
-from yithlibraryserver.scripts.buildassets import buildassets
+from yithlibraryserver.scripts.createdb import createdb
 from yithlibraryserver.scripts.testing import ScriptTests
 
 
@@ -46,8 +46,7 @@ class BuildAssetsTests(ScriptTests):
         sys.argv = []
         sys.stdout = StringIO()
 
-        # Call send backups with no arguments
-        result = buildassets()
+        result = createdb()
         self.assertEqual(result, 2)
         stdout = sys.stdout.getvalue()
         self.assertEqual(stdout, 'You must provide at least one argument\n')
@@ -55,7 +54,7 @@ class BuildAssetsTests(ScriptTests):
     def test_normal_usage(self):
         sys.argv = ['notused', self.conf_file_path]
         sys.stdout = StringIO()
-        result = buildassets()
+        result = createdb()
         self.assertEqual(result, None)
         stdout = sys.stdout.getvalue()
         self.assertEqual(stdout, '')

@@ -55,10 +55,10 @@ class ConfigTests(unittest.TestCase):
 
         settings = {
             'auth_tk_secret': '1234',
-            'mongo_uri': 'mongodb://localhost:27017/test',
+            'database_url': 'postgresql://foo:bar@localhost:5432/test',
         }
         app = main({}, **settings)
         self.assertEqual(settings['auth_tk_secret'],
                          app.registry.settings['auth_tk_secret'])
-        self.assertEqual(settings['mongo_uri'],
-                         app.registry.settings['mongo_uri'])
+        self.assertEqual(settings['database_url'],
+                         app.registry.settings['database_url'])

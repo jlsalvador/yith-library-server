@@ -19,6 +19,7 @@
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import platform
 import sys
 
 from setuptools import setup, find_packages
@@ -84,6 +85,10 @@ if sys.version_info[0] < 3:
     # packages that only work in Python 2.x
     requirements['base'].extend(requirements['python2'])
 
+if platform.python_implementation() == 'PyPy':
+    requirements['base'].extend(requirements['pypy'])
+    requirements['base'].remove('psycopg2==2.6')
+
 
 setup(
     name='yith-library-server',
@@ -130,5 +135,7 @@ setup(
     yith_migrate = yithlibraryserver.scripts.migrations:migrate
     yith_send_backups_via_email = yithlibraryserver.scripts.backups:send_backups_via_email
     yith_announce = yithlibraryserver.scripts.announce:announce
-    yith_build_assets = yithlibraryserver.scripts.buildassets:buildassets""",
+    yith_build_assets = yithlibraryserver.scripts.buildassets:buildassets
+    yith_create_db = yithlibraryserver.scripts.createdb:createdb
+    yith_mongo2postgres = yithlibraryserver.scripts.mongo2postgres:mongo2postgres""",
 )

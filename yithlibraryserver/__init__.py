@@ -23,6 +23,16 @@ import re
 
 from pkg_resources import resource_filename
 from deform import Form
+
+try:
+    import psycopg2
+    psycopg2.__version__
+except ImportError:  # pragma: no cover
+    # psycopg2cffi is psycopg2 compatible for pypy
+    from psycopg2cffi import compat
+    # by calling this hook SQLAlchemy will find the psycopg2 packageb
+    compat.register()
+
 from pyramid.config import Configurator
 from pyramid.authentication import AuthTktAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
@@ -32,7 +42,6 @@ from pyramid.settings import asbool
 
 from yithlibraryserver.config import read_setting_from_env
 from yithlibraryserver.cors import CORSManager
-from yithlibraryserver.db import MongoDB
 from yithlibraryserver.jsonrenderer import json_renderer
 from yithlibraryserver.i18n import deform_translator, locale_negotiator
 from yithlibraryserver.security import RootFactory
@@ -66,11 +75,12 @@ def main(global_config, **settings):
         raise ConfigurationError('The auth_tk_secret configuration '
                                  'option is required')
 
-    # read the Mongodb URI
-    settings['mongo_uri'] = read_setting_from_env(settings, 'mongo_uri', None)
-    if settings['mongo_uri'] is None:
-        raise ConfigurationError('The mongo_uri configuration '
+    # SQLAlchemy setup
+    settings['database_url'] = read_setting_from_env(settings, 'database_url', None)
+    if settings['database_url'] is None:
+        raise ConfigurationError('The database_url configuration '
                                  'option is required')
+    settings['sqlalchemy.url'] = settings['database_url']
 
     # Available languages
     available_languages = read_setting_from_env(settings, 'available_languages', 'en es')
@@ -98,6 +108,12 @@ def main(global_config, **settings):
     manifest_path = ('static', 'build', 'manifest.json')
     settings['webassets.manifest'] = 'json:%s' % os.path.join(here, *manifest_path)
 
+    # sessions
+    settings['session.data_dir'] = read_setting_from_env(
+        settings, 'session_data_dir', settings.get('session.data_dir'))
+    settings['session.lock_dir'] = read_setting_from_env(
+        settings, 'session_lock_dir', settings.get('session.lock_dir'))
+
     # main config object
     config = Configurator(
         settings=settings,
@@ -122,6 +138,10 @@ def main(global_config, **settings):
     # Webassets
     config.include('pyramid_webassets')
 
+    # SQLAlchemy
+    config.include('pyramid_sqlalchemy')
+    config.enable_sql_two_phase_commit()
+
     # Setup of stuff used only in the tests
     if 'testing' in settings and asbool(settings['testing']):
         config.include('pyramid_mailer.testing')
@@ -145,11 +165,6 @@ def main(global_config, **settings):
     config.include('pyramid_sna')
 
     config.include('pyramid_tm')
-
-    # Mongodb setup
-    mongodb = MongoDB(settings['mongo_uri'])
-    config.registry.settings['mongodb'] = mongodb
-    config.registry.settings['db_conn'] = mongodb.get_connection()
 
     # CORS support setup
     config.registry.settings['cors_manager'] = CORSManager(

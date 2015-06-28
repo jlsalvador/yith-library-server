@@ -20,16 +20,20 @@
     <p><a class="btn btn-primary" href="${request.route_path('oauth2_clients')}" i18n:translate="">Start using a client</a></p>
 
   </div>
-  
+
   <ul class="list-unstyled row">
-    <li class="col-sm-4" tal:repeat="app authorized_apps">
+    <li class="col-sm-4" tal:repeat="authorized_app authorized_apps">
       <div class="thumbnail">
-	<img tal:condition="app.image_url" src="${app.image_url}" width="200" height="200" alt="" />
-	<div class="caption">
-	  <h3>${app.name}</h3>
-	  <p tal:condition="app.description">${app.description}</p>
-	  <a class="btn btn-warning btn-lg btn-block" href="${request.route_path('oauth2_revoke_application', app=app._id)}" i18n:translate="">Revoke authorization</a>
-	</div>
+	    <img tal:condition="authorized_app.application.image_url"
+             src="${authorized_app.application.image_url}"
+             width="200"
+             height="200"
+             alt="" />
+	    <div class="caption">
+	      <h3>${authorized_app.application.name}</h3>
+	      <p tal:condition="authorized_app.application.description">${authorized_app.application.description}</p>
+	      <a class="btn btn-warning btn-lg btn-block" href="${request.route_path('oauth2_revoke_application', app=authorized_app.application.id)}" i18n:translate="">Revoke authorization</a>
+	    </div>
       </div>
     </li>
   </ul>

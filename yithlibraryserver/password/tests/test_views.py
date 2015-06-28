@@ -20,41 +20,42 @@
 
 import datetime
 
-from bson.tz_util import utc
 from freezegun import freeze_time
 
-from yithlibraryserver import testing
+from pyramid_sqlalchemy import Session
+
+from sqlalchemy.orm.exc import NoResultFound
+
+import transaction
+
 from yithlibraryserver.compat import text_type
+from yithlibraryserver.testing import TestCase
+from yithlibraryserver.oauth2.models import AccessCode
+from yithlibraryserver.oauth2.tests import create_client, create_user
+from yithlibraryserver.password.models import Password
 
 
-class ViewTests(testing.TestCase):
+class ViewTests(TestCase):
 
     def setUp(self):
         super(ViewTests, self).setUp()
 
+        self.owner_id, self.app_id, _ = create_client()
+        self.user, self.user_id = create_user()
         self.access_code = '1234'
         self.auth_header = {'Authorization': 'Bearer %s' % self.access_code}
-        self.user_id = self.db.users.insert({
-            'provider_user_id': 'user1',
-            'screen_name': 'User 1',
-        })
 
-        self.freezer = freeze_time('2014-02-23 08:00:00')
-        self.freezer.start()
-        expiration = datetime.datetime(2014, 2, 23, 9, 0, tzinfo=utc)
+        expiration = datetime.datetime(2014, 2, 23, 9, 0)
 
-        self.db.access_codes.insert({
-            'access_token': self.access_code,
-            'type': 'Bearer',
-            'expiration': expiration,
-            'user_id': self.user_id,
-            'scope': 'read-passwords write-passwords',
-            'client_id': 'client1',
-        })
-
-    def tearDown(self):
-        self.freezer.stop()
-        super(ViewTests, self).tearDown()
+        access_code = AccessCode(code=self.access_code,
+                                 code_type='Bearer',
+                                 expiration=expiration,
+                                 scope=['read-passwords', 'write-passwords'],
+                                 application_id=self.app_id,
+                                 user_id=self.user_id)
+        with transaction.manager:
+            Session.add(access_code)
+            Session.flush()
 
     def test_password_collection_options(self):
         res = self.testapp.options('/passwords')
@@ -65,39 +66,52 @@ class ViewTests(testing.TestCase):
         self.assertEqual(res.headers['Access-Control-Allow-Headers'],
                          'Origin, Content-Type, Accept, Authorization')
 
+    @freeze_time('2014-02-23 08:00:00')
     def test_password_collection_get_empty(self):
         res = self.testapp.get('/passwords', headers=self.auth_header)
         self.assertEqual(res.status, '200 OK')
         self.assertEqual(res.body, b'{"passwords": []}')
 
+    @freeze_time('2014-02-23 08:00:00')
     def test_password_collection_get_non_empty(self):
-        password_id = self.db.passwords.insert({
-            'service': 'testing',
-            'secret': 's3cr3t',
-            'owner': self.user_id,
-        })
+        password = Password(service='testing',
+                            secret='s3cr3t',
+                            user_id=self.user_id)
+
+        with transaction.manager:
+            Session.add(password)
+            Session.flush()
+            password_id = password.id
 
         res = self.testapp.get('/passwords', headers=self.auth_header)
         self.assertEqual(res.status, '200 OK')
+
         self.assertEqual(res.json, {
-            "passwords": [
-                {
-                    "owner": str(self.user_id),
-                    "secret": "s3cr3t",
-                    "_id": str(password_id),
-                    "id": str(password_id),
-                    "service": "testing",
-                },
-            ],
+            "passwords": [{
+                'account': '',
+                'creation': '2014-02-23T08:00:00',
+                'modification': '2014-02-23T08:00:00',
+                'expiration': None,
+                'id': password_id,
+                'notes': u'',
+                'owner': self.user_id,
+                'user': self.user_id,
+                'secret': 's3cr3t',
+                'service': 'testing',
+                'tags': [],
+            }],
         })
 
-    def test_password_collection_post(self):
+    @freeze_time('2014-02-23 08:00:00')
+    def test_password_collection_post_bad_request(self):
         res = self.testapp.post('/passwords', '', headers=self.auth_header,
                                 status=400)
         self.assertEqual(res.status, '400 Bad Request')
         self.assertEqual(res.body,
                          b'{"message": "No JSON object could be decoded"}')
 
+    @freeze_time('2014-02-23 08:00:00')
+    def test_password_collection_post_good_request(self):
         res = self.testapp.post('/passwords',
                                 '{"password": {"secret": "s3cr3t", "service": "myservice"}}',
                                 headers=self.auth_header)
@@ -113,112 +127,177 @@ class ViewTests(testing.TestCase):
         self.assertEqual(res.headers['Access-Control-Allow-Headers'],
                          'Origin, Content-Type, Accept, Authorization')
 
-    def test_password_get(self):
-        res = self.testapp.get('/passwords/123456', headers=self.auth_header,
+    @freeze_time('2014-02-23 08:00:00')
+    def test_password_get_password_invalid_id(self):
+        res = self.testapp.get('/passwords/000000000000000000000000',
+                               headers=self.auth_header,
                                status=400)
         self.assertEqual(res.status, '400 Bad Request')
         self.assertEqual(res.body,
                          b'{"message": "Invalid password id"}')
 
-        res = self.testapp.get('/passwords/000000000000000000000000',
+    @freeze_time('2014-02-23 08:00:00')
+    def test_password_get_password_not_found(self):
+        res = self.testapp.get('/passwords/00000000-0000-0000-0000-000000000000',
                                headers=self.auth_header,
                                status=404)
         self.assertEqual(res.status, '404 Not Found')
         self.assertEqual(res.body,
                          b'{"message": "Password not found"}')
 
-        password_id = self.db.passwords.insert({
-            'service': 'testing',
-            'secret': 's3cr3t',
-            'owner': self.user_id,
-        })
+    @freeze_time('2014-02-23 08:00:00')
+    def test_password_get_password_found(self):
+        password = Password(service='testing',
+                            secret='s3cr3t',
+                            user_id=self.user_id)
+
+        with transaction.manager:
+            Session.add(password)
+            Session.flush()
+            password_id = password.id
+
         res = self.testapp.get('/passwords/%s' % str(password_id),
                                headers=self.auth_header)
         self.assertEqual(res.status, '200 OK')
         self.assertEqual(res.json, {
-            'password': {
-                'service': 'testing',
+            "password": {
+                'account': '',
+                'creation': '2014-02-23T08:00:00',
+                'modification': '2014-02-23T08:00:00',
+                'expiration': None,
+                'id': password_id,
+                'notes': u'',
+                'owner': self.user_id,
+                'user': self.user_id,
                 'secret': 's3cr3t',
-                'owner': str(self.user_id),
-                '_id': str(password_id),
-                'id': str(password_id),
+                'service': 'testing',
+                'tags': [],
             },
         })
 
-    def test_password_put(self):
-        res = self.testapp.put('/passwords/123456', headers=self.auth_header,
+    @freeze_time('2014-02-23 08:00:00')
+    def test_password_put_invalid_id(self):
+        res = self.testapp.put('/passwords/000000000000000000000000',
+                               headers=self.auth_header,
                                status=400)
         self.assertEqual(res.status, '400 Bad Request')
         self.assertEqual(res.body,
                          b'{"message": "Invalid password id"}')
 
-        res = self.testapp.put('/passwords/000000000000000000000000',
-                               headers=self.auth_header, status=400)
+    @freeze_time('2014-02-23 08:00:00')
+    def test_password_put_not_found(self):
+        res = self.testapp.put('/passwords/00000000-0000-0000-0000-000000000000',
+                               headers=self.auth_header, status=404)
+        self.assertEqual(res.status, '404 Not Found')
+        self.assertEqual(res.body,
+                         b'{"message": "Password not found"}')
+
+    @freeze_time('2014-02-23 08:00:00')
+    def test_password_put_bad_request(self):
+        password = Password(service='testing',
+                            secret='s3cr3t',
+                            user_id=self.user_id)
+
+        with transaction.manager:
+            Session.add(password)
+            Session.flush()
+            password_id = password.id
+
+        res = self.testapp.put('/passwords/%s' % str(password_id),
+                               '', headers=self.auth_header,
+                               status=400)
         self.assertEqual(res.status, '400 Bad Request')
         self.assertEqual(res.body,
                          b'{"message": "No JSON object could be decoded"}')
 
-        password_id = self.db.passwords.insert({
-            'service': 'testing',
-            'secret': 's3cr3t',
-            'owner': self.user_id,
-        })
-        data = '{"password": {"service": "testing2", "secret": "sup3rs3cr3t", "_id": "%s"}}' % str(password_id)
+    @freeze_time('2014-02-23 08:00:00')
+    def test_password_put_found(self):
+        password = Password(service='testing',
+                            secret='s3cr3t',
+                            user_id=self.user_id)
+
+        with transaction.manager:
+            Session.add(password)
+            Session.flush()
+            password_id = password.id
+
+        data = """{
+        "password": {
+            "service": "testing2",
+            "secret": "sup3rs3cr3t",
+            "owner": "%s",
+            "id": "%s"
+            }
+        }""" % (str(self.user_id), str(password_id))
         res = self.testapp.put('/passwords/%s' % str(password_id),
                                data, headers=self.auth_header)
         self.assertEqual(res.status, '200 OK')
+        self.maxDiff = None
         self.assertEqual(res.json, {
-            'password': {
-                'service': 'testing2',
-                'secret': 'sup3rs3cr3t',
-                'owner': str(self.user_id),
-                'account': None,
-                'creation': None,
+            "password": {
+                'account': '',
+                'creation': '2014-02-23T08:00:00',
+                'modification': '2014-02-23T08:00:00',
                 'expiration': None,
-                'last_modification': None,
-                'notes': None,
-                'tags': None,
-                '_id': str(password_id),
-                'id': str(password_id),
+                'id': password_id,
+                'notes': u'',
+                'owner': self.user_id,
+                'user': self.user_id,
+                'secret': 'sup3rs3cr3t',
+                'service': 'testing2',
+                'tags': [],
             },
         })
-        password = self.db.passwords.find_one(password_id)
-        self.assertNotEqual(password, None)
-        self.assertEqual(password['service'], 'testing2')
-        self.assertEqual(password['secret'], 'sup3rs3cr3t')
-        self.assertEqual(password['owner'], self.user_id)
+        password = Session.query(Password).filter(
+            Password.id==password_id
+        ).one()
+        self.assertEqual(password.service, 'testing2')
+        self.assertEqual(password.secret, 'sup3rs3cr3t')
 
-        data = '{"password": {"service": "testing2", "secret": "sup3rs3cr3t", "_id": "000000000000000000000000"}}'
-        res = self.testapp.put('/passwords/000000000000000000000000',
-                               data, headers=self.auth_header, status=404)
-        self.assertEqual(res.status, '404 Not Found')
-        self.assertEqual(res.body, b'{"message": "Password not found"}')
-
-    def test_password_delete(self):
-        res = self.testapp.delete('/passwords/123456',
-                                  headers=self.auth_header, status=400)
+    @freeze_time('2014-02-23 08:00:00')
+    def test_password_delete_invalid_id(self):
+        res = self.testapp.delete('/passwords/000000000000000000000000',
+                                  headers=self.auth_header,
+                                  status=400)
         self.assertEqual(res.status, '400 Bad Request')
         self.assertEqual(res.body,
                          b'{"message": "Invalid password id"}')
 
-        res = self.testapp.delete('/passwords/000000000000000000000000',
+    @freeze_time('2014-02-23 08:00:00')
+    def test_password_delete_not_found(self):
+        res = self.testapp.delete('/passwords/00000000-0000-0000-0000-000000000000',
                                   headers=self.auth_header, status=404)
         self.assertEqual(res.status, '404 Not Found')
         self.assertEqual(res.body,
                          b'{"message": "Password not found"}')
 
-        password = {
-            'secret': 's3cr3t',
-            'service': 'myservice',
-            'owner': self.user_id,
-        }
-        _id = self.db.passwords.insert(password)
-        count = self.db.passwords.count()
+    @freeze_time('2014-02-23 08:00:00')
+    def test_password_delete_found(self):
+        password = Password(service='myservice',
+                            secret='s3cr3t',
+                            user_id=self.user_id)
 
-        res = self.testapp.delete('/passwords/%s' % str(_id),
+        with transaction.manager:
+            Session.add(password)
+            Session.flush()
+            password_id = password.id
+
+        count_before = Session.query(Password).count()
+        self.assertEqual(count_before, 1)
+
+        res = self.testapp.delete('/passwords/%s' % str(password_id),
                                   headers=self.auth_header)
         self.assertEqual(res.status, '200 OK')
         self.assertEqual(res.body, (b'{"password": {"id": "'
-                                    + text_type(_id).encode('ascii')
+                                    + text_type(password_id).encode('ascii')
                                     + b'"}}'))
-        self.assertEqual(self.db.passwords.count(), count - 1)
+        count_after = Session.query(Password).count()
+        self.assertEqual(count_after, 0)
+        try:
+            password = Session.query(Password).filter(
+                Password.id==password_id
+            ).one()
+        except NoResultFound:
+            password = None
+
+        self.assertEqual(password, None)

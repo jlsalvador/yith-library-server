@@ -23,43 +23,40 @@ import unittest
 from yithlibraryserver.password.validation import validate_password
 
 
-class UtilsTests(unittest.TestCase):
+class ValidatePasswordsTests(unittest.TestCase):
 
-    def test_validate_password(self):
-        # empty json
+    def test_empty_json(self):
         password, errors = validate_password(b'')
         self.assertEqual(password, {})
         self.assertEqual(errors, ['No JSON object could be decoded'])
 
-        # bad json
+    def test_bad_json(self):
         password, errors = validate_password(b'[1')
         self.assertEqual(password, {})
         self.assertEqual(errors, ['No JSON object could be decoded'])
 
-        # no password
+    def test_no_password(self):
         password, errors = validate_password(b'{"foo": "bar"}')
         self.assertEqual(password, {})
         self.assertEqual(errors, ['There must be only one toplevel element called "password"'])
 
-        # secret is missing
-        password, errors = validate_password(b'{"password": {}}', _id='1')
+    def test_secret_missing(self):
+        password, errors = validate_password(b'{"password": {}}')
         self.assertEqual(errors, ['Secret is required',
                                   'Service is required'])
 
-        # service is missing
-        password, errors = validate_password(b'{"password": {"secret": "s3cr3t"}}', _id='1')
+    def test_service_missing(self):
+        password, errors = validate_password(b'{"password": {"secret": "s3cr3t"}}')
         self.assertEqual(errors, ['Service is required'])
 
-        # everything is fine
-        password, errors = validate_password(b'{"password": {"secret": "s3cr3t", "service": "myservice"}}', _id='1')
+    def test_everything_fine(self):
+        password, errors = validate_password(b'{"password": {"secret": "s3cr3t", "service": "myservice"}}')
         self.assertEqual(errors, [])
         self.assertEqual(password, {
             'secret': 's3cr3t',
             'service': 'myservice',
-            'account': None,
+            'account': '',
             'expiration': None,
-            'notes': None,
-            'tags': None,
-            'creation': None,
-            'last_modification': None,
+            'notes': '',
+            'tags': [],
         })

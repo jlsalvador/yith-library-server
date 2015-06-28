@@ -1,7 +1,5 @@
 # Yith Library Server is a password storage server.
-# Copyright (C) 2012-2013 Yaco Sistemas
-# Copyright (C) 2012-2013 Alejandro Blanco Escudero <alejandro.b.e@gmail.com>
-# Copyright (C) 2012-2013 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
+# Copyright (C) 2015 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
 #
 # This file is part of Yith Library Server.
 #
@@ -18,9 +16,29 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
-import uuid
+import os
+import os.path
 
+from newrelic import agent
+agent.initialize()
 
-def create_client_id_and_secret(application):
-    application['client_id'] = str(uuid.uuid4())
-    application['client_secret'] = str(uuid.uuid4())
+from paste.deploy import loadapp
+from pyramid.paster import setup_logging
+from raven.middleware import Sentry
+from waitress import serve
+
+basedir= os.path.dirname(os.path.realpath(__file__))
+conf_file = os.path.join(
+    basedir,
+    'yithlibraryserver', 'config-templates', 'production.ini'
+)
+
+application = loadapp('config:%s' % conf_file)
+application = agent.WSGIApplicationWrapper(Sentry(application))
+
+setup_logging(conf_file)
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    scheme = os.environ.get("SCHEME", "https")
+    serve(application, host='0.0.0.0', port=port, url_scheme=scheme)

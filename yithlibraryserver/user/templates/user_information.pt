@@ -20,11 +20,11 @@
     </div>
     <div class="col-sm-10">
       <ul class="list-unstyled">
-        <li>Id: ${request.user._id }</li>
+        <li>Id: ${request.user.id }</li>
         <li><span i18n:translate="">Member since:</span>
           <time
-             datetime="${request.user.date_joined.isoformat()}"
-             tal:content="dates_formatter.datetime(request.user.date_joined)" />
+             datetime="${request.user.creation.isoformat()}"
+             tal:content="dates_formatter.datetime(request.user.creation)" />
         </li>
         <li><span i18n:translate="">Last seen:</span>
           <time

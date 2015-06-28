@@ -20,32 +20,26 @@ import optparse
 import textwrap
 import sys
 
-import transaction
-
 from pyramid.paster import bootstrap
 
 from pyramid_mailer import get_mailer
 
+from pyramid_sqlalchemy import Session
+
+import transaction
+
 from yithlibraryserver.compat import urlparse
 from yithlibraryserver.email import create_message
-from yithlibraryserver.scripts.reports import get_passwords_map
 from yithlibraryserver.scripts.utils import safe_print
 from yithlibraryserver.scripts.utils import get_user_display_name
+from yithlibraryserver.user.models import User
 
 
-def get_all_users_with_passwords_and_email(db):
-    all_passwords = list(db.passwords.find())
-    passwords_map = get_passwords_map(all_passwords)
-    for user in db.users.find({
-        'email_verified': True,
-    }):
-        if not user['email']:
-            continue
-
-        if not user['_id'] in passwords_map:
-            continue
-
-        yield user
+def get_all_users_with_passwords_and_email():
+    for user in Session.query(User).filter(
+            User.email_verified==True, User.email!=''):
+        if len(user.passwords) > 0:
+            yield user
 
 
 def send_email(request, email_template, user, preferences_link):
@@ -56,7 +50,7 @@ def send_email(request, email_template, user, preferences_link):
         'yithlibraryserver.scripts:templates/%s' % email_template,
         context,
         "Yith Library announcement",
-        [user['email']],
+        [user.email],
     )
 
 
@@ -79,8 +73,6 @@ def announce():
     settings, closer = env['registry'].settings, env['closer']
 
     try:
-
-        db = settings['mongodb'].get_database()
         request = env['request']
 
         public_url_root = settings['public_url_root']
@@ -92,7 +84,7 @@ def announce():
 
         mailer = get_mailer(request)
 
-        for user in get_all_users_with_passwords_and_email(db):
+        for user in get_all_users_with_passwords_and_email():
             message = send_email(request, email_template, user,
                                  preferences_link)
             mailer.send(message)

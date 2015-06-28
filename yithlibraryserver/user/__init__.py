@@ -18,10 +18,15 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+
 from yithlibraryserver.user.analytics import get_google_analytics
 from yithlibraryserver.user.gravatar import get_gravatar
 from yithlibraryserver.user.idp import add_identity_provider
+from yithlibraryserver.user.models import User, ExternalIdentity
 from yithlibraryserver.user.security import get_user
+
+logger = logging.getLogger(__name__)
 
 
 def includeme(config):
@@ -46,3 +51,6 @@ def includeme(config):
                      '/google-analytics-preference')
 
     config.add_route('user_view', '/user')
+
+    logger.debug('Importing %s model so SQLAlchemy knows about it', User)
+    logger.debug('Importing %s model so SQLAlchemy knows about it', ExternalIdentity)

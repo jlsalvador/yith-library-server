@@ -22,7 +22,6 @@ from pyramid.events import BeforeRender, NewRequest
 from pyramid.i18n import get_locale_name
 from pyramid.renderers import get_renderer
 
-from yithlibraryserver.db import get_db
 from yithlibraryserver.locale import DatesFormatter
 
 
@@ -68,8 +67,6 @@ def add_custom_functions(event):
 
 
 def includeme(config):
-    config.set_request_property(get_db, 'db', reify=True)
-
     config.add_subscriber(add_cors_headers_response, NewRequest)
     config.add_subscriber(add_compress_response_callback, NewRequest)
     config.add_subscriber(add_base_templates, BeforeRender)

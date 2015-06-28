@@ -1,7 +1,7 @@
 # Yith Library Server is a password storage server.
 # Copyright (C) 2012-2013 Yaco Sistemas
 # Copyright (C) 2012-2013 Alejandro Blanco Escudero <alejandro.b.e@gmail.com>
-# Copyright (C) 2012-2013 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
+# Copyright (C) 2012-2015 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
 #
 # This file is part of Yith Library Server.
 #
@@ -18,12 +18,24 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
-import bson
 from freezegun import freeze_time
 
-from yithlibraryserver import testing
+from pyramid_sqlalchemy import Session
+
+from sqlalchemy.orm.exc import NoResultFound
+
+import transaction
+
 from yithlibraryserver.compat import encodebytes, encode_header, urlparse
-from yithlibraryserver.oauth2.authorization import Authorizator
+from yithlibraryserver.oauth2.models import (
+    AccessCode,
+    Application,
+    AuthorizationCode,
+    AuthorizedApplication,
+)
+from yithlibraryserver.oauth2.tests import create_client, create_user
+from yithlibraryserver.testing import TestCase
+from yithlibraryserver.user.models import User
 
 
 def auth_basic_encode(user, password):
@@ -32,57 +44,28 @@ def auth_basic_encode(user, password):
     return encode_header(value)
 
 
-class BaseEndpointTests(testing.TestCase):
-
-    def _login(self):
-        user_id = self.db.users.insert({
-            'twitter_id': 'twitter1',
-            'screen_name': 'John Doe',
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': 'john@example.com',
-        })
-        self.testapp.get('/__login/' + str(user_id))
-        return user_id
-
-    def _create_client(self):
-        owner_id = self.db.users.insert({
-            'twitter_id': 'twitter2',
-            'screen_name': 'Administrator',
-            'first_name': 'Alice',
-            'last_name': 'Doe',
-            'email': 'alice@example.com',
-        })
-        app_id = self.db.applications.insert({
-            'owner': owner_id,
-            'client_id': '123456',
-            'client_secret': 's3cr3t',
-            'name': 'Example',
-            'main_url': 'https://example.com',
-            'callback_url': 'https://example.com/callback',
-            'image_url': 'https://example.com/logo.png',
-            'description': 'Example description',
-        })
-        return owner_id, app_id
+def create_and_login_user(testapp):
+    user, user_id = create_user()
+    testapp.get('/__login/' + str(user_id))
+    return user, user_id
 
 
-class AuthorizationEndpointTests(BaseEndpointTests):
+class AuthorizationEndpointTests(TestCase):
 
     def test_anonymous_user(self):
-        # this view requires authentication
         res = self.testapp.get('/oauth2/endpoints/authorization')
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Log in')
 
     def test_no_client_id(self):
-        self._login()
+        create_and_login_user(self.testapp)
         res = self.testapp.get('/oauth2/endpoints/authorization',
                                status=400)
         self.assertEqual(res.status, '400 Bad Request')
         res.mustcontain('Error is: invalid_client_id')
 
     def test_invalid_client_id(self):
-        self._login()
+        create_and_login_user(self.testapp)
         res = self.testapp.get('/oauth2/endpoints/authorization', {
             'client_id': '1234',
         }, status=400)
@@ -98,20 +81,20 @@ class AuthorizationEndpointTests(BaseEndpointTests):
         self.assertEqual(query, expected)
 
     def test_no_response_type(self):
-        self._login()
-        self._create_client()
+        create_and_login_user(self.testapp)
+        _, app_id, _ = create_client()
         res = self.testapp.get('/oauth2/endpoints/authorization', {
-            'client_id': '123456',
+            'client_id': app_id,
         }, status=302)
         self.assertEqual(res.status, '302 Found')
         self._assert_error(res.location, 'invalid_request',
                            'Missing response_type parameter.')
 
     def test_invalid_redirect_callback(self):
-        self._login()
-        self._create_client()
+        create_and_login_user(self.testapp)
+        _, app_id, _ = create_client()
         res = self.testapp.get('/oauth2/endpoints/authorization', {
-            'client_id': '123456',
+            'client_id': app_id,
             'response_type': 'code',
             'redirect_uri': 'https://example.com/bad-callback',
         }, status=400)
@@ -119,10 +102,10 @@ class AuthorizationEndpointTests(BaseEndpointTests):
         res.mustcontain('Error is: mismatching_redirect_uri')
 
     def test_user_cancel(self):
-        self._login()
-        self._create_client()
+        create_and_login_user(self.testapp)
+        _, app_id, _ = create_client()
         res = self.testapp.get('/oauth2/endpoints/authorization', {
-            'client_id': '123456',
+            'client_id': app_id,
             'response_type': 'code',
             'redirect_uri': 'https://example.com/callback',
         })
@@ -131,7 +114,7 @@ class AuthorizationEndpointTests(BaseEndpointTests):
         res = self.testapp.post('/oauth2/endpoints/authorization', {
             'cancel': 'No thanks',
             'response_type': 'code',
-            'client_id': '123456',
+            'client_id': app_id,
             'redirect_uri': 'https://example.com/callback',
             'scope': 'read-passwords',
         })
@@ -141,16 +124,17 @@ class AuthorizationEndpointTests(BaseEndpointTests):
 
     @freeze_time('2012-01-10 15:31:11')
     def test_non_authorized_app_yet(self):
-        user_id = self._login()
-        self._create_client()
+        _, user_id = create_and_login_user(self.testapp)
+        _, application_id, _ = create_client()
 
-        authorizator = Authorizator(self.db)
-        auths = authorizator.get_user_authorizations({'_id': user_id})
-        self.assertEqual(auths.count(), 0)
+        count = Session.query(AuthorizedApplication).filter(
+            AuthorizedApplication.user_id==user_id,
+        ).count()
+        self.assertEqual(count, 0)
 
         res = self.testapp.get('/oauth2/endpoints/authorization', {
             'response_type': 'code',
-            'client_id': '123456',
+            'client_id': application_id,
             'redirect_uri': 'https://example.com/callback',
         })
         self.assertEqual(res.status, '200 OK')
@@ -164,45 +148,49 @@ class AuthorizationEndpointTests(BaseEndpointTests):
         res = self.testapp.post('/oauth2/endpoints/authorization', {
             'submit': 'Authorize',
             'response_type': 'code',
-            'client_id': '123456',
+            'client_id': application_id,
             'redirect_uri': 'https://example.com/callback',
             'scope': 'read-passwords',
         })
         self.assertEqual(res.status, '302 Found')
 
         # Check that the app is authorized now
-        auths = authorizator.get_user_authorizations({'_id': user_id})
-        self.assertEqual(auths.count(), 1)
-        auth = auths[0]
-        self.assertEqual(auth['redirect_uri'], 'https://example.com/callback')
-        self.assertEqual(auth['response_type'], 'code')
-        self.assertEqual(auth['client_id'], '123456')
-        self.assertEqual(auth['scope'], 'read-passwords')
-        self.assertEqual(auth['user'], user_id)
+        query = Session.query(AuthorizedApplication).filter(
+            AuthorizedApplication.user_id==user_id,
+        )
+
+        self.assertEqual(query.count(), 1)
+        auth = query[0]
+        self.assertEqual(auth.redirect_uri, 'https://example.com/callback')
+        self.assertEqual(auth.response_type, 'code')
+        self.assertEqual(auth.application.id, application_id)
+        self.assertEqual(auth.scope, ['read-passwords'])
+        self.assertEqual(auth.user_id, user_id)
+        self.assertEqual(auth.application_id, application_id)
 
         # Check the right redirect url
-        grant = self.db.authorization_codes.find_one({
-            'client_id': '123456',
-            'user': user_id,
-        })
-        self.assertNotEqual(grant, None)
-        code = grant['code']
-        location = 'https://example.com/callback?code=%s' % code
+        grant = Session.query(AuthorizationCode).filter(
+            AuthorizationCode.application_id==application_id,
+            AuthorizationCode.user_id==user_id,
+        ).one()
+        self.assertEqual(grant.application.id, application_id)
+        location = 'https://example.com/callback?code=%s' % grant.code
         self.assertEqual(res.location, location)
 
     @freeze_time('2012-01-10 15:31:11')
     def test_already_authorized_app(self):
-        user_id = self._login()
-        self._create_client()
+        _, user_id = create_and_login_user(self.testapp)
+        _, application_id, _ = create_client()
 
-        authorizator = Authorizator(self.db)
-        auths = authorizator.get_user_authorizations({'_id': user_id})
-        self.assertEqual(auths.count(), 0)
+        count = Session.query(AuthorizedApplication).filter(
+            AuthorizedApplication.user_id==user_id,
+        ).count()
+        self.assertEqual(count, 0)
 
         # do an initial authorization
         res = self.testapp.get('/oauth2/endpoints/authorization', {
             'response_type': 'code',
-            'client_id': '123456',
+            'client_id': application_id,
             'redirect_uri': 'https://example.com/callback',
         })
         self.assertEqual(res.status, '200 OK')
@@ -210,45 +198,49 @@ class AuthorizationEndpointTests(BaseEndpointTests):
         res = self.testapp.post('/oauth2/endpoints/authorization', {
             'submit': 'Authorize',
             'response_type': 'code',
-            'client_id': '123456',
+            'client_id': application_id,
             'redirect_uri': 'https://example.com/callback',
             'scope': 'read-passwords',
         })
         self.assertEqual(res.status, '302 Found')
 
-        auths = authorizator.get_user_authorizations({'_id': user_id})
-        self.assertEqual(auths.count(), 1)
+        count = Session.query(AuthorizedApplication).filter(
+            AuthorizedApplication.user_id==user_id,
+        ).count()
+        self.assertEqual(count, 1)
 
         # Now do a second authorization
         res = self.testapp.get('/oauth2/endpoints/authorization', {
             'response_type': 'code',
-            'client_id': '123456',
+            'client_id': application_id,
             'redirect_uri': 'https://example.com/callback',
         })
         self.assertEqual(res.status, '302 Found')
 
-        auths = authorizator.get_user_authorizations({'_id': user_id})
-        self.assertEqual(auths.count(), 1)
+        count = Session.query(AuthorizedApplication).filter(
+            AuthorizedApplication.user_id==user_id,
+        ).count()
+        self.assertEqual(count, 1)
 
-        grants = self.db.authorization_codes.find({
-            'client_id': '123456',
-            'user': user_id,
-        })
+        grants = Session.query(AuthorizationCode).filter(
+            AuthorizationCode.application_id==application_id,
+            AuthorizationCode.user_id==user_id,
+        )
 
         # There are two grants now
         self.assertEqual(grants.count(), 2)
-        code = grants[1]['code']
+        code = grants.all()[1].code
         location = 'https://example.com/callback?code=%s' % code
         self.assertEqual(res.location, location)
 
     @freeze_time('2012-01-10 15:31:11')
     def test_invalid_redirect_callback_in_post(self):
-        self._login()
-        self._create_client()
+        create_and_login_user(self.testapp)
+        _, app_id, _ = create_client()
 
         res = self.testapp.get('/oauth2/endpoints/authorization', {
             'response_type': 'code',
-            'client_id': '123456',
+            'client_id': app_id,
             'redirect_uri': 'https://example.com/callback',
         })
         self.assertEqual(res.status, '200 OK')
@@ -256,7 +248,7 @@ class AuthorizationEndpointTests(BaseEndpointTests):
         res = self.testapp.post('/oauth2/endpoints/authorization', {
             'submit': 'Authorize',
             'response_type': 'code',
-            'client_id': '123456',
+            'client_id': app_id,
             'redirect_uri': 'https://example.malicious.com/callback',
             'scope': 'read-passwords',
         }, status=400)
@@ -265,12 +257,12 @@ class AuthorizationEndpointTests(BaseEndpointTests):
 
     @freeze_time('2012-01-10 15:31:11')
     def test_no_response_type_in_post(self):
-        self._login()
-        self._create_client()
+        create_and_login_user(self.testapp)
+        _, app_id, _ = create_client()
 
         res = self.testapp.get('/oauth2/endpoints/authorization', {
             'response_type': 'code',
-            'client_id': '123456',
+            'client_id': app_id,
             'redirect_uri': 'https://example.com/callback',
         })
         self.assertEqual(res.status, '200 OK')
@@ -278,7 +270,7 @@ class AuthorizationEndpointTests(BaseEndpointTests):
         res = self.testapp.post('/oauth2/endpoints/authorization', {
             'submit': 'Authorize',
             # missing response_type
-            'client_id': '123456',
+            'client_id': app_id,
             'redirect_uri': 'https://example.com/callback',
             'scope': 'read-passwords',
         }, status=302)
@@ -287,7 +279,7 @@ class AuthorizationEndpointTests(BaseEndpointTests):
                            'Missing response_type parameter.')
 
 
-class TokenEndpointTests(BaseEndpointTests):
+class TokenEndpointTests(TestCase):
 
     def test_no_grant_type(self):
         res = self.testapp.post('/oauth2/endpoints/token', {}, status=400)
@@ -318,9 +310,9 @@ class TokenEndpointTests(BaseEndpointTests):
         })
 
     def test_bad_client_secret(self):
-        self._create_client()
+        _, app_id, _ = create_client()
         headers = {
-            'Authorization': auth_basic_encode('123456', 'secret'),
+            'Authorization': auth_basic_encode(app_id, 'secret'),
         }
         res = self.testapp.post('/oauth2/endpoints/token', {
             'grant_type': 'password',
@@ -330,9 +322,9 @@ class TokenEndpointTests(BaseEndpointTests):
         })
 
     def test_usupported_grant_type(self):
-        self._create_client()
+        _, app_id, app_secret = create_client()
         headers = {
-            'Authorization': auth_basic_encode('123456', 's3cr3t'),
+            'Authorization': auth_basic_encode(app_id, app_secret),
         }
         res = self.testapp.post('/oauth2/endpoints/token', {
             'grant_type': 'foo',
@@ -342,9 +334,9 @@ class TokenEndpointTests(BaseEndpointTests):
         })
 
     def test_missing_code(self):
-        self._create_client()
+        _, app_id, app_secret = create_client()
         headers = {
-            'Authorization': auth_basic_encode('123456', 's3cr3t'),
+            'Authorization': auth_basic_encode(app_id, app_secret),
         }
         res = self.testapp.post('/oauth2/endpoints/token', {
             'grant_type': 'authorization_code',
@@ -356,9 +348,9 @@ class TokenEndpointTests(BaseEndpointTests):
         })
 
     def test_invalid_code(self):
-        self._create_client()
+        _, app_id, app_secret = create_client()
         headers = {
-            'Authorization': auth_basic_encode('123456', 's3cr3t'),
+            'Authorization': auth_basic_encode(app_id, app_secret),
         }
         res = self.testapp.post('/oauth2/endpoints/token', {
             'grant_type': 'authorization_code',
@@ -371,13 +363,13 @@ class TokenEndpointTests(BaseEndpointTests):
 
     @freeze_time('2012-01-10 15:31:11')
     def test_valid_request(self):
-        user_id = self._login()
-        self._create_client()
+        _, user_id = create_and_login_user(self.testapp)
+        _, application_id, application_secret = create_client()
 
         # First authorize the app
         res = self.testapp.get('/oauth2/endpoints/authorization', {
             'response_type': 'code',
-            'client_id': '123456',
+            'client_id': application_id,
             'redirect_uri': 'https://example.com/callback',
         })
         self.assertEqual(res.status, '200 OK')
@@ -385,20 +377,21 @@ class TokenEndpointTests(BaseEndpointTests):
         res = self.testapp.post('/oauth2/endpoints/authorization', {
             'submit': 'Authorize',
             'response_type': 'code',
-            'client_id': '123456',
+            'client_id': application_id,
             'redirect_uri': 'https://example.com/callback',
             'scope': 'read-passwords',
         })
         self.assertEqual(res.status, '302 Found')
-        grant = self.db.authorization_codes.find_one({
-            'client_id': '123456',
-            'user': user_id,
-        })
-        code = grant['code']
+        grant = Session.query(AuthorizationCode).filter(
+            AuthorizationCode.application_id==application_id,
+            AuthorizationCode.user_id==user_id,
+        ).one()
+        code = grant.code
 
         # now send the token request
         headers = {
-            'Authorization': auth_basic_encode('123456', 's3cr3t'),
+            'Authorization': auth_basic_encode(application_id,
+                                               application_secret),
         }
         res = self.testapp.post('/oauth2/endpoints/token', {
             'grant_type': 'authorization_code',
@@ -409,38 +402,34 @@ class TokenEndpointTests(BaseEndpointTests):
         self.assertEqual(res.headers['Pragma'], 'no-cache')
 
         # the grant code should be removed
-        grant = self.db.authorization_codes.find_one({
-            'client_id': '123456',
-            'user': user_id,
-        })
+        try:
+            grant = Session.query(AuthorizationCode).filter(
+                AuthorizationCode.application_id==application_id,
+                AuthorizationCode.user_id==user_id,
+            ).one()
+        except NoResultFound:
+            grant = None
         self.assertEqual(grant, None)
 
         # and an access token should be created
         self.assertEqual(res.json['token_type'], 'Bearer')
         self.assertEqual(res.json['expires_in'], 3600)
-        access_code = self.db.access_codes.find_one({
-            'access_token': res.json['access_token'],
-        })
+
+        access_code = Session.query(AccessCode).filter(
+            AccessCode.code==res.json['access_token'],
+        ).one()
         self.assertNotEqual(access_code, None)
 
 
-class ApplicationViewTests(testing.TestCase):
+class ApplicationViewTests(TestCase):
 
-    def test_applications(self):
-        # this view required authentication
+    def test_applications_requires_authentication(self):
         res = self.testapp.get('/oauth2/applications')
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Log in')
 
-        # Log in
-        user_id = self.db.users.insert({
-            'twitter_id': 'twitter1',
-            'screen_name': 'John Doe',
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': 'john@example.com',
-        })
-        self.testapp.get('/__login/' + str(user_id))
+    def test_applications_list_apps_empty(self):
+        create_and_login_user(self.testapp)
 
         res = self.testapp.get('/oauth2/applications')
         self.assertEqual(res.status, '200 OK')
@@ -449,23 +438,43 @@ class ApplicationViewTests(testing.TestCase):
         res.mustcontain('Developer Applications')
         res.mustcontain('Register new application')
 
-        # TODO: test creating apps and make sure they appear in the output
+    def test_applications_list_apps_one_app(self):
+        user = User(screen_name='John Doe',
+                    first_name='John',
+                    last_name='Doe',
+                    email='john@example.com')
 
-    def test_application_new(self):
-        # this view required authentication
+        app = Application(name='Test Application',
+                          main_url='https://example.com',
+                          callback_url='https://example.com/callback',
+                          production_ready=False)
+        user.applications.append(app)
+
+        with transaction.manager:
+            Session.add(user)
+            Session.flush()
+            app_id = app.id
+            user_id = user.id
+
+        self.testapp.get('/__login/' + str(user_id))
+
+        res = self.testapp.get('/oauth2/applications')
+        self.assertEqual(res.status, '200 OK')
+        res.mustcontain('John')
+        res.mustcontain('Log out')
+        res.mustcontain('Developer Applications')
+        res.mustcontain('Register new application')
+        res.mustcontain(app_id)
+        res.mustcontain('Test Application')
+        res.mustcontain('https://example.com')
+
+    def test_application_new_requires_authentication(self):
         res = self.testapp.get('/oauth2/applications/new')
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Log in')
 
-        # Log in
-        user_id = self.db.users.insert({
-            'twitter_id': 'twitter1',
-            'screen_name': 'John Doe',
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': 'john@example.com',
-        })
-        self.testapp.get('/__login/' + str(user_id))
+    def test_application_new_success(self):
+        _, user_id = create_and_login_user(self.testapp)
 
         res = self.testapp.get('/oauth2/applications/new')
         self.assertEqual(res.status, '200 OK')
@@ -489,27 +498,28 @@ https://example.com''',
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/oauth2/applications')
 
-        app = self.db.applications.find_one({
-            'name': 'Test Application',
-            'main_url': 'http://example.com',
-            'callback_url': 'http://example.com/callback',
-            'authorized_origins': ['http://example.com',
-                                   'https://example.com'],
-        })
-        self.assertNotEqual(app, None)
-        self.assertTrue('client_id' in app)
-        self.assertTrue('client_secret' in app)
-        self.assertEqual(app['owner'], user_id)
-        self.assertEqual(app['name'], 'Test Application')
-        self.assertEqual(app['main_url'], 'http://example.com')
-        self.assertEqual(app['callback_url'], 'http://example.com/callback')
-        self.assertEqual(app['authorized_origins'],
+        app = Session.query(Application).filter(
+            Application.name=='Test Application',
+            Application.main_url=='http://example.com',
+            Application.callback_url=='http://example.com/callback',
+            Application.authorized_origins==['http://example.com',
+                                             'https://example.com']
+        ).one()
+        self.assertNotEqual(app.id, '')
+        self.assertNotEqual(app.secret, '')
+        self.assertEqual(app.user.id, user_id)
+        self.assertEqual(app.name, 'Test Application')
+        self.assertEqual(app.main_url, 'http://example.com')
+        self.assertEqual(app.callback_url, 'http://example.com/callback')
+        self.assertEqual(app.authorized_origins,
                          ['http://example.com', 'https://example.com'])
-        self.assertEqual(app['production_ready'], False)
-        self.assertEqual(app['image_url'], '')
-        self.assertEqual(app['description'], '')
+        self.assertEqual(app.production_ready, False)
+        self.assertEqual(app.image_url, '')
+        self.assertEqual(app.description, '')
 
-        # error if we don't fill all fields
+    def test_application_new_validation_error(self):
+        create_and_login_user(self.testapp)
+
         res = self.testapp.post('/oauth2/applications/new', {
             'name': 'Test Application',
             'callback_url': 'http://example.com/callback',
@@ -518,54 +528,89 @@ https://example.com''',
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('There was a problem with your submission')
 
-        # The user hit the cancel button
+    def test_application_new_user_cancel(self):
+        create_and_login_user(self.testapp)
+
         res = self.testapp.post('/oauth2/applications/new', {
             'cancel': 'Cancel',
         })
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/oauth2/applications')
 
-    def test_application_delete(self):
-        # this view required authentication
+    def test_application_delete_requires_authentication(self):
         res = self.testapp.get('/oauth2/applications/new')
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Log in')
 
-        # Log in
-        user_id = self.db.users.insert({
-            'twitter_id': 'twitter1',
-            'screen_name': 'John Doe',
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': 'john@example.com',
-        })
-        self.testapp.get('/__login/' + str(user_id))
-
-        res = self.testapp.get('/oauth2/applications/xxx/delete',
-                               status=400)
-        self.assertEqual(res.status, '400 Bad Request')
-        res.mustcontain('Invalid application id')
+    def test_application_delete_invalid_app_id(self):
+        create_and_login_user(self.testapp)
 
         res = self.testapp.get('/oauth2/applications/000000000000000000000000/delete',
-                               status=404)
+                               status=400)
+        self.assertEqual(res.status, '400 Bad Request')
+
+    def test_application_delete_app_id_doesnt_exist(self):
+        create_and_login_user(self.testapp)
+
+        res = self.testapp.get(
+            '/oauth2/applications/00000000-0000-0000-0000-000000000000/delete',
+            status=404
+        )
         self.assertEqual(res.status, '404 Not Found')
 
-        # create a valid app
-        app_id = self.db.applications.insert({
-            'owner': bson.ObjectId(),
-            'name': 'Test Application',
-            'client_id': '123456',
-            'callback_url': 'https://example.com/callback',
-            'production_ready': False,
-        })
+    def test_application_delete_unauthorized(self):
+        create_and_login_user(self.testapp)
+
+        app = Application(name='Test Application',
+                          callback_url='https://example.com/callback',
+                          production_ready=False)
+
+        other_user = User(screen_name='Alice doe',
+                          first_name='Alice',
+                          last_name='Doe',
+                          email='alice@example.com')
+
+        other_user.applications.append(app)
+
+        with transaction.manager:
+            Session.add(other_user)
+            Session.flush()
+            app_id = app.id
 
         res = self.testapp.get('/oauth2/applications/%s/delete' % str(app_id),
                                status=401)
         self.assertEqual(res.status, '401 Unauthorized')
 
-        self.db.applications.update({'_id': app_id}, {
-            '$set': {'owner': user_id},
-        })
+    def test_application_delete(self):
+        user = User(screen_name='John Doe',
+                    first_name='John',
+                    last_name='Doe',
+                    email='john@example.com')
+
+        app = Application(name='Test Application',
+                          callback_url='https://example.com/callback',
+                          production_ready=False)
+        user.applications.append(app)
+        auth_app = AuthorizedApplication(
+            scope=['scope1'],
+            response_type='code',
+            redirect_uri='http://example.com/callback',
+            application=app,
+            user=user,
+        )
+
+        with transaction.manager:
+            Session.add(user)
+            Session.add(auth_app)
+            Session.flush()
+            app_id = app.id
+            user_id = user.id
+
+        self.testapp.get('/__login/' + str(user_id))
+
+        self.assertEqual(Session.query(Application).count(), 1)
+        self.assertEqual(Session.query(AuthorizedApplication).count(), 1)
+
         res = self.testapp.get('/oauth2/applications/%s/delete' % str(app_id))
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Delete Application <span>Test Application</span>')
@@ -579,58 +624,96 @@ https://example.com''',
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/oauth2/applications')
 
-        app = self.db.applications.find_one(app_id)
+        try:
+            app = Session.query(Application).filter(Application.id==app_id).one()
+        except NoResultFound:
+            app = None
+
         self.assertEqual(app, None)
 
-    def test_application_edit(self):
-        # this view required authentication
+        self.assertEqual(Session.query(User).count(), 1)
+        self.assertEqual(Session.query(Application).count(), 0)
+        # Related authorizations should be deleted on cascade
+        self.assertEqual(Session.query(AuthorizedApplication).count(), 0)
+
+
+    def test_application_edit_requires_authentication(self):
         res = self.testapp.get('/oauth2/applications/xxx/edit')
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Log in')
 
-        # Log in
-        user_id = self.db.users.insert({
-            'twitter_id': 'twitter1',
-            'screen_name': 'John Doe',
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': 'john@example.com',
-        })
-        self.testapp.get('/__login/' + str(user_id))
-
-        res = self.testapp.get('/oauth2/applications/xxx/edit',
-                               status=400)
-        self.assertEqual(res.status, '400 Bad Request')
-        res.mustcontain('Invalid application id')
+    def test_application_edit_invalid_app_id(self):
+        create_and_login_user(self.testapp)
 
         res = self.testapp.get(
             '/oauth2/applications/000000000000000000000000/edit',
+            status=400,
+        )
+        self.assertEqual(res.status, '400 Bad Request')
+
+    def test_application_edit_app_id_doesnt_exist(self):
+        create_and_login_user(self.testapp)
+
+        res = self.testapp.get(
+            '/oauth2/applications/00000000-0000-0000-0000-000000000000/edit',
             status=404,
         )
         self.assertEqual(res.status, '404 Not Found')
 
-        # create a valid app
-        app_id = self.db.applications.insert({
-            'owner': bson.ObjectId(),
-            'name': 'Test Application',
-            'main_url': 'http://example.com',
-            'callback_url': 'http://example.com/callback',
-            'authorized_origins': ['http://example.com',
-                                   'https://example.com'],
-            'production_ready': False,
-            'image_url': 'http://example.com/image.png',
-            'description': 'example description',
-            'client_id': '123456',
-            'client_secret': 'secret',
-        })
+    def test_application_edit_unauthorized(self):
+        create_and_login_user(self.testapp)
+
+        app = Application(name='Test Application',
+                          main_url='http://example.com',
+                          callback_url='http://example.com/callback',
+                          authorized_origins=['http://example.com',
+                                              'https://example.com'],
+                          production_ready=False,
+                          image_url='http://example.com/image.png',
+                          description='example description')
+
+        other_user = User(screen_name='Alice doe',
+                          first_name='Alice',
+                          last_name='Doe',
+                          email='alice@example.com')
+
+        other_user.applications.append(app)
+
+        with transaction.manager:
+            Session.add(other_user)
+            Session.flush()
+            app_id = app.id
+
 
         res = self.testapp.get('/oauth2/applications/%s/edit' % str(app_id),
                                status=401)
         self.assertEqual(res.status, '401 Unauthorized')
 
-        self.db.applications.update({'_id': app_id}, {
-            '$set': {'owner': user_id},
-        })
+    def test_application_edit(self):
+        user = User(screen_name='John Doe',
+                    first_name='John',
+                    last_name='Doe',
+                    email='john@example.com')
+
+        app = Application(name='Test Application',
+                          main_url='http://example.com',
+                          callback_url='http://example.com/callback',
+                          authorized_origins=['http://example.com',
+                                              'https://example.com'],
+                          production_ready=False,
+                          image_url='http://example.com/image.png',
+                          description='example description')
+        user.applications.append(app)
+
+        with transaction.manager:
+            Session.add(user)
+            Session.flush()
+            app_id = app.id
+            app_secret = app.secret
+            user_id = user.id
+
+        self.testapp.get('/__login/' + str(user_id))
+
         res = self.testapp.get('/oauth2/applications/%s/edit' % str(app_id))
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Edit application <span>Test Application</span>')
@@ -649,15 +732,15 @@ https://example.com""")
         res.mustcontain('Description')
         res.mustcontain('example description')
         res.mustcontain('Client Id')
-        res.mustcontain('123456')
+        res.mustcontain(app_id)
         res.mustcontain('Client secret')
-        res.mustcontain('secret')
+        res.mustcontain(app_secret)
         res.mustcontain('Save application')
         res.mustcontain('Delete application')
         res.mustcontain('Cancel')
 
         # Let's make some changes
-        old_count = self.db.applications.count()
+        old_count = Session.query(Application).count()
         res = self.testapp.post('/oauth2/applications/%s/edit' % str(app_id), {
             'name': 'Test Application 2',
             'main_url': 'http://example.com/new',
@@ -672,23 +755,44 @@ https://example.com""")
         })
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/oauth2/applications')
-        new_app = self.db.applications.find_one(app_id)
-        self.assertEqual(new_app['name'], 'Test Application 2')
-        self.assertEqual(new_app['main_url'],
-                         'http://example.com/new')
-        self.assertEqual(new_app['callback_url'],
-                         'http://example.com/new/callback')
-        self.assertEqual(new_app['authorized_origins'],
-                         ['http://client.example.com'])
-        self.assertEqual(new_app['production_ready'], True)
-        self.assertEqual(new_app['image_url'], 'http://example.com/image2.png')
-        self.assertEqual(new_app['description'], 'example description 2')
+        new_app = Session.query(Application).filter(Application.id==app_id).one()
+        self.assertEqual(new_app.name, 'Test Application 2')
+        self.assertEqual(new_app.main_url, 'http://example.com/new')
+        self.assertEqual(new_app.callback_url, 'http://example.com/new/callback')
+        self.assertEqual(new_app.authorized_origins, ['http://client.example.com'])
+        self.assertEqual(new_app.production_ready, True)
+        self.assertEqual(new_app.image_url, 'http://example.com/image2.png')
+        self.assertEqual(new_app.description, 'example description 2')
         # the Id and Secret shouldn't change
-        self.assertEqual(new_app['client_id'], '123456')
-        self.assertEqual(new_app['client_secret'], 'secret')
-        self.assertEqual(old_count, self.db.applications.count())
+        self.assertEqual(new_app.id, app_id)
+        self.assertEqual(new_app.secret, app_secret)
+        new_count = Session.query(Application).count()
+        self.assertEqual(old_count, new_count)
 
-        # Try and invalid change
+    def test_application_edit_invalid_change(self):
+        user = User(screen_name='John Doe',
+                    first_name='John',
+                    last_name='Doe',
+                    email='john@example.com')
+
+        app = Application(name='Test Application',
+                          main_url='http://example.com',
+                          callback_url='http://example.com/callback',
+                          authorized_origins=['http://example.com',
+                                              'https://example.com'],
+                          production_ready=False,
+                          image_url='http://example.com/image.png',
+                          description='example description')
+        user.applications.append(app)
+
+        with transaction.manager:
+            Session.add(user)
+            Session.flush()
+            app_id = app.id
+            user_id = user.id
+
+        self.testapp.get('/__login/' + str(user_id))
+
         res = self.testapp.post('/oauth2/applications/%s/edit' % str(app_id), {
             'submit': 'Save changes',
         })
@@ -696,7 +800,30 @@ https://example.com""")
         res.mustcontain('There was a problem with your submission')
         res.mustcontain('Required')
 
-        # The user hit the delete button
+    def test_application_edit_delete(self):
+        user = User(screen_name='John Doe',
+                    first_name='John',
+                    last_name='Doe',
+                    email='john@example.com')
+
+        app = Application(name='Test Application',
+                          main_url='http://example.com',
+                          callback_url='http://example.com/callback',
+                          authorized_origins=['http://example.com',
+                                              'https://example.com'],
+                          production_ready=False,
+                          image_url='http://example.com/image.png',
+                          description='example description')
+        user.applications.append(app)
+
+        with transaction.manager:
+            Session.add(user)
+            Session.flush()
+            app_id = app.id
+            user_id = user.id
+
+        self.testapp.get('/__login/' + str(user_id))
+
         res = self.testapp.post('/oauth2/applications/%s/edit' % str(app_id), {
             'delete': 'Delete',
         })
@@ -705,64 +832,91 @@ https://example.com""")
                          'http://localhost/oauth2/applications/%s/delete'
                          % str(app_id))
 
-        # The user hit the cancel button
+    def test_application_edit_cancel(self):
+        user = User(screen_name='John Doe',
+                    first_name='John',
+                    last_name='Doe',
+                    email='john@example.com')
+
+        app = Application(name='Test Application',
+                          main_url='http://example.com',
+                          callback_url='http://example.com/callback',
+                          authorized_origins=['http://example.com',
+                                              'https://example.com'],
+                          production_ready=False,
+                          image_url='http://example.com/image.png',
+                          description='example description')
+        user.applications.append(app)
+
+        with transaction.manager:
+            Session.add(user)
+            Session.flush()
+            app_id = app.id
+            user_id = user.id
+
+        self.testapp.get('/__login/' + str(user_id))
+
         res = self.testapp.post('/oauth2/applications/%s/edit' % str(app_id), {
             'cancel': 'Cancel',
         })
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/oauth2/applications')
 
-    def test_authorized_applications(self):
-        # this view required authentication
+    def test_authorized_applications_requires_authentication(self):
         res = self.testapp.get('/oauth2/authorized-applications')
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Log in')
 
-        # Log in
-        user_id = self.db.users.insert({
-            'twitter_id': 'twitter1',
-            'screen_name': 'John Doe',
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': 'john@example.com',
-        })
-        self.testapp.get('/__login/' + str(user_id))
+    def test_authorized_applications(self):
+        administrator = User(screen_name='Alice doe',
+                             first_name='Alice',
+                             last_name='Doe',
+                             email='alice@example.com')
+        user = User(screen_name='John Doe',
+                    first_name='John',
+                    last_name='Doe',
+                    email='john@example.com')
 
-        # let's create a couple of authorized apps
-        self.db.applications.insert({
-            'owner': bson.ObjectId(),
-            'name': 'Test Application 1',
-            'main_url': 'http://example.com/1',
-            'image_url': 'http://example.com/1/logo.png',
-            'callback_url': 'http://example.com/1/callback',
-            'description': 'Test description 1',
-            'client_id': '123456',
-            'client_secret': 'secret',
-        })
-        self.db.authorized_apps.insert({
-            'user': user_id,
-            'client_id': '123456',
-            'redirect_uri': 'http://example.com/1/callback',
-            'response_type': 'code',
-            'scope': 'scope1',
-        })
-        self.db.applications.insert({
-            'owner': bson.ObjectId(),
-            'name': 'Test Application 2',
-            'main_url': 'http://example.com/2',
-            'image_url': 'http://example.com/2/logo.png',
-            'callback_url': 'http://example.com/2/callback',
-            'description': 'Test description 2',
-            'client_id': '789012',
-            'client_secret': 'secret',
-        })
-        self.db.authorized_apps.insert({
-            'user': user_id,
-            'client_id': '789012',
-            'redirect_uri': 'http://example.com/2/callback',
-            'response_type': 'code',
-            'scope': 'scope1',
-        })
+        app1 = Application(name='Test Application 1',
+                           main_url='http://example.com/1',
+                           callback_url='http://example.com/1/callback',
+                           image_url='http://example.com/1/image.png',
+                           description='Test description 1',
+                           user=administrator)
+
+        auth_app1 = AuthorizedApplication(
+            scope=['scope1'],
+            response_type='code',
+            redirect_uri='http://example.com/1/callback',
+            application=app1,
+            user=user,
+        )
+
+        app2 = Application(name='Test Application 2',
+                           main_url='http://example.com/2',
+                           callback_url='http://example.com/2/callback',
+                           image_url='http://example.com/2/image.png',
+                           description='Test description 2',
+                           user=administrator)
+
+        auth_app2 = AuthorizedApplication(
+            scope=['scope1'],
+            response_type='code',
+            redirect_uri='http://example.com/2/callback',
+            application=app2,
+            user=user,
+        )
+
+        with transaction.manager:
+            Session.add(user)
+            Session.add(app1)
+            Session.add(auth_app1)
+            Session.add(app2)
+            Session.add(auth_app2)
+            Session.flush()
+            user_id = user.id
+
+        self.testapp.get('/__login/' + str(user_id))
 
         res = self.testapp.get('/oauth2/authorized-applications')
         self.assertEqual(res.status, '200 OK')
@@ -770,50 +924,62 @@ https://example.com""")
         res.mustcontain('Test Application 1')
         res.mustcontain('Test Application 2')
 
-    def test_revoke_application(self):
-        # this view required authentication
+    def test_revoke_application_requires_authentication(self):
         res = self.testapp.get('/oauth2/applications/xxx/revoke')
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Log in')
 
-        # Log in
-        user_id = self.db.users.insert({
-            'twitter_id': 'twitter1',
-            'screen_name': 'John Doe',
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': 'john@example.com',
-        })
-        self.testapp.get('/__login/' + str(user_id))
-
-        res = self.testapp.get('/oauth2/applications/xxx/revoke',
-                               status=400)
-        self.assertEqual(res.status, '400 Bad Request')
-        res.mustcontain('Invalid application id')
+    def test_revoke_application_invalid_app_id(self):
+        create_and_login_user(self.testapp)
 
         res = self.testapp.get(
             '/oauth2/applications/000000000000000000000000/revoke',
+            status=400)
+        self.assertEqual(res.status, '400 Bad Request')
+
+    def test_revoke_application_app_id_doesnt_exist(self):
+        create_and_login_user(self.testapp)
+
+        res = self.testapp.get(
+            '/oauth2/applications/00000000-0000-0000-0000-000000000000/revoke',
             status=404)
         self.assertEqual(res.status, '404 Not Found')
 
-        # create a valid app
-        app_id = self.db.applications.insert({
-            'owner': bson.ObjectId(),
-            'name': 'Test Application',
-            'main_url': 'http://example.com',
-            'callback_url': 'http://example.com/callback',
-            'client_id': '123456',
-            'client_secret': 'secret',
-        })
+    def test_revoke_application_app(self):
+        administrator = User(screen_name='Alice doe',
+                             first_name='Alice',
+                             last_name='Doe',
+                             email='alice@example.com')
+        user = User(screen_name='John Doe',
+                    first_name='John',
+                    last_name='Doe',
+                    email='john@example.com')
 
-        authorizator = Authorizator(self.db)
-        credentials = {
-            'client_id': '123456',
-            'user': {'_id': user_id},
-            'redirect_uri': 'http://example.com/callback',
-            'response_type': 'code',
-        }
-        authorizator.store_user_authorization(['read-passwords'], credentials)
+        app = Application(name='Test Application',
+                           main_url='http://example.com',
+                           callback_url='http://example.com/callback',
+                           user=administrator)
+
+        auth_app = AuthorizedApplication(
+            scope=['read-passwords'],
+            response_type='code',
+            redirect_uri='http://example.com/callback',
+            application=app,
+            user=user,
+        )
+
+        with transaction.manager:
+            Session.add(user)
+            Session.add(app)
+            Session.add(auth_app)
+            Session.flush()
+            user_id = user.id
+            app_id = app.id
+
+        self.testapp.get('/__login/' + str(user_id))
+
+        self.assertEqual(Session.query(Application).count(), 1)
+        self.assertEqual(Session.query(AuthorizedApplication).count(), 1)
 
         res = self.testapp.get('/oauth2/applications/%s/revoke' % str(app_id))
         self.assertEqual(res.status, '200 OK')
@@ -824,31 +990,48 @@ https://example.com""")
         })
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/oauth2/authorized-applications')
-        self.assertFalse(authorizator.is_app_authorized(['read-passwords'],
-                                                        credentials))
+        try:
+            auth_app = Session.query(AuthorizedApplication).filter(
+                AuthorizedApplication.application_id==app_id,
+                AuthorizedApplication.user_id==user_id,
+            ).one()
+        except NoResultFound:
+            auth_app = None
 
-    def test_clients(self):
+        self.assertEqual(auth_app, None)
+
+        # the application should not be removed on cascade
+        self.assertEqual(Session.query(Application).count(), 1)
+
+    def test_clients_empty(self):
         res = self.testapp.get('/oauth2/clients')
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Available Clients')
 
-        # create a couple of apps
-        self.db.applications.insert({
-            'client_id': '123456',
-            'name': 'Example app 1',
-            'main_url': 'https://example.com',
-            'callback_url': 'https://example.com/callback',
-            'production_ready': True,
-            'image_url': 'https://example.com/image.png',
-            'description': 'example description',
-        })
-        self.db.applications.insert({
-            'client_id': '654321',
-            'name': 'Example app 2',
-            'main_url': 'https://2.example.com',
-            'callback_url': 'https://2.example.com/callback',
-            'production_ready': False,
-        })
+    def test_clients_two_apps(self):
+        administrator = User(screen_name='Alice doe',
+                             first_name='Alice',
+                             last_name='Doe',
+                             email='alice@example.com')
+
+        app1 = Application(name='Example app 1',
+                           main_url='https://example.com',
+                           callback_url='https://example.com/callback',
+                           image_url='https://example.com/image.png',
+                           description='example description',
+                           production_ready=True,
+                           user=administrator)
+
+        app2 = Application(name='Example app 2',
+                           main_url='https://2.example.com',
+                           callback_url='https://2.example.com/callback',
+                           production_ready=False,
+                           user=administrator)
+
+        with transaction.manager:
+            Session.add(app1)
+            Session.add(app2)
+            Session.flush()
 
         res = self.testapp.get('/oauth2/clients')
         self.assertEqual(res.status, '200 OK')

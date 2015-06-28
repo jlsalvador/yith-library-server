@@ -22,9 +22,11 @@ from pyramid.httpexceptions import HTTPBadRequest, HTTPFound
 from pyramid.i18n import get_locale_name
 from pyramid.view import view_config
 
+from pyramid_sqlalchemy import Session
+
 from yithlibraryserver.contributions.email import send_thankyou_email
 from yithlibraryserver.contributions.email import send_notification_to_admins
-from yithlibraryserver.contributions.models import create_donation
+from yithlibraryserver.contributions.models import Donation
 from yithlibraryserver.contributions.models import include_sticker
 from yithlibraryserver.contributions.paypal import PayPalExpressCheckout
 from yithlibraryserver.i18n import TranslationString as _
@@ -76,7 +78,30 @@ def contributions_paypal_success(request):
                                                              amount)
 
             if success:
-                donation = create_donation(request, request.POST)
+                donation = Donation(
+                    amount=amount,
+                    first_name=request.POST['firstname'],
+                    last_name=request.POST['lastname'],
+                    city=request.POST['city'],
+                    country=request.POST['country'],
+                    state=request.POST['state'],
+                    street=request.POST['street'],
+                    zipcode=request.POST['zip'],
+                    email=request.POST['email'],
+                )
+                if donation.should_include_sticker():
+                    if 'no-sticker' in request.POST:
+                        donation.send_sticker = False
+                    else:
+                        donation.send_sticker = True
+                else:
+                    donation.send_sticker = False
+
+                donation.user = request.user
+
+                Session.add(donation)
+                Session.flush()
+
                 send_thankyou_email(request, donation)
                 send_notification_to_admins(request, donation)
                 request.session.flash(

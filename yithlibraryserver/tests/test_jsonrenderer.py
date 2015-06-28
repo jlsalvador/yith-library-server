@@ -1,5 +1,5 @@
 # Yith Library Server is a password storage server.
-# Copyright (C) 2012-2013 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
+# Copyright (C) 2012-2015 Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>
 #
 # This file is part of Yith Library Server.
 #
@@ -17,16 +17,20 @@
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+import unittest
 
-from pyramid.renderers import JSON
-
-json_renderer = JSON()
-
-
-def datetime_adapter(obj, request):
-    return obj.isoformat()
-json_renderer.add_adapter(datetime.datetime, datetime_adapter)
+from yithlibraryserver.jsonrenderer import datetime_adapter, datetime_parser
 
 
-def datetime_parser(datestring):
-    return datetime.datetime.strptime(datestring, "%Y-%m-%dT%H:%M:%S")
+class DatetimeParserTests(unittest.TestCase):
+
+    def test_parse_date(self):
+        self.assertEqual(datetime_parser('2015-04-30T22:10:30'),
+                         datetime.datetime(2015, 4, 30, 22, 10, 30))
+
+
+class DatetimeAdapterTests(unittest.TestCase):
+
+    def test_adapt_date(self):
+        date = datetime.datetime(2015, 4, 30, 22, 10, 30)
+        self.assertEqual(datetime_adapter(date, None), '2015-04-30T22:10:30')

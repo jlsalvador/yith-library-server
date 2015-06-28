@@ -23,12 +23,14 @@ from pyramid.httpexceptions import HTTPFound
 from pyramid.response import Response
 from pyramid.view import view_config
 
+from pyramid_sqlalchemy import Session
+
 from yithlibraryserver.backups.utils import get_backup_filename
 from yithlibraryserver.backups.utils import get_user_passwords
 from yithlibraryserver.backups.utils import compress, uncompress
 from yithlibraryserver.i18n import translation_domain
 from yithlibraryserver.i18n import TranslationString as _
-from yithlibraryserver.password.models import PasswordsManager
+from yithlibraryserver.password.models import Password
 
 
 @view_config(route_name='backups_index',
@@ -41,7 +43,7 @@ def backups_index(request):
 @view_config(route_name='backups_export',
              permission='backups')
 def backups_export(request):
-    passwords = get_user_passwords(request.db, request.user)
+    passwords = get_user_passwords(request.user)
     data = compress(passwords)
     response = Response(body=data, content_type='application/yith-library')
     today = datetime.date.today()
@@ -61,14 +63,20 @@ def backups_import(request):
         if passwords_field != '':
             try:
                 json_data = uncompress(passwords_field.file.read())
-                passwords_manager = PasswordsManager(request.db)
-                passwords_manager.delete(request.user)
-                passwords_manager.create(request.user, json_data)
             except (IOError, ValueError):
                 request.session.flash(
                     _('There was a problem reading your passwords file'),
                     'error')
                 return response
+
+            Session.query(Password).filter(
+                Password.user==request.user
+            ).delete(synchronize_session=False)
+
+            for password_data in json_data:
+                if 'secret' in password_data:
+                    password = Password(user=request.user, **password_data)
+                    Session.add(password)
 
             n_passwords = len(json_data)
             localizer = get_localizer(request)

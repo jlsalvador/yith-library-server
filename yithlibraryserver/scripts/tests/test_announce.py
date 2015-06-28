@@ -18,9 +18,14 @@
 
 import sys
 
+from pyramid_sqlalchemy import Session
+
+import transaction
+
 from yithlibraryserver.compat import StringIO
 from yithlibraryserver.scripts.announce import announce
 from yithlibraryserver.scripts.testing import ScriptTests
+from yithlibraryserver.user.models import User
 
 
 class AnnounceTests(ScriptTests):
@@ -55,48 +60,46 @@ class AnnounceTests(ScriptTests):
         self.assertEqual(stdout, '')
 
     def test_announce_send_email(self):
-        self.add_passwords(self.db.users.insert({
-            'first_name': 'John0',
-            'last_name': 'Doe',
-            'email': '',
-            'email_verified': False,
-            'send_passwords_periodically': False,
-        }), 10)
-        self.add_passwords(self.db.users.insert({
-            'first_name': 'John1',
-            'last_name': 'Doe',
-            'email': '',
-            'email_verified': True,
-            'send_passwords_periodically': False,
-        }), 10)
-        self.add_passwords(self.db.users.insert({
-            'first_name': 'John2',
-            'last_name': 'Doe',
-            'email': 'john2@example.com',
-            'email_verified': True,
-            'send_passwords_periodically': False,
-        }), 10)
-        self.add_passwords(self.db.users.insert({
-            'first_name': 'John3',
-            'last_name': 'Doe',
-            'email': 'john3@example.com',
-            'email_verified': True,
-            'send_passwords_periodically': True,
-        }), 10)
-        self.add_passwords(self.db.users.insert({
-            'first_name': 'John4',
-            'last_name': 'Doe',
-            'email': 'john4@example.com',
-            'email_verified': False,
-            'send_passwords_periodically': True,
-        }), 10)
-        self.db.users.insert({
-            'first_name': 'John4',
-            'last_name': 'Doe',
-            'email': 'john4@example.com',
-            'email_verified': True,
-            'send_passwords_periodically': True,
-        })
+        with transaction.manager:
+            user1 = User(first_name='John0',
+                         last_name='Doe',
+                         email='',
+                         email_verified=False,
+                         send_passwords_periodically=False)
+            Session.add(user1)
+            self.add_passwords(user1, 10)
+
+            user2 = User(first_name='John1',
+                         last_name='Doe',
+                         email='',
+                         email_verified=True,
+                         send_passwords_periodically=False)
+            Session.add(user2)
+            self.add_passwords(user2, 10)
+
+            user3 = User(first_name='John2',
+                         last_name='Doe',
+                         email='john2@example.com',
+                         email_verified=True,
+                         send_passwords_periodically=True)
+            Session.add(user3)
+            self.add_passwords(user3, 10)
+
+            user4 = User(first_name='John3',
+                         last_name='Doe',
+                         email='john3@example.com',
+                         email_verified=True,
+                         send_passwords_periodically=True)
+            Session.add(user4)
+            self.add_passwords(user4, 10)
+
+            user5 = User(first_name='John4',
+                         last_name='Doe',
+                         email='john4@example.com',
+                         email_verified=False,
+                         send_passwords_periodically=True)
+            Session.add(user5)
+            self.add_passwords(user5, 10)
 
         sys.argv = ['notused', self.conf_file_path, 'new_feature_send_passwords_via_email']
         sys.stdout = StringIO()
