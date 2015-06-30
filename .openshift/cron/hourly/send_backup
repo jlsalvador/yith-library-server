@@ -1,0 +1,3 @@
+#!/bin/bash
+
+yith_send_backups_via_email $OPENSHIFT_REPO_DIR/yithlibraryserver/config-templates/production.ini
