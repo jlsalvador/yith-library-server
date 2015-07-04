@@ -30,7 +30,8 @@
   <div class="form-group">
     <div class="col-sm-offset-3 col-sm-9">
       <tal:block repeat="button field.buttons">
-        <button tal:attributes="disabled button.disabled; class python:'btnText submit btn ' + button.css_class"
+        <button tal:attributes="disabled 'disabled' if button.disabled else None;
+                                class 'btnText submit btn ' + button.css_class"
                 id="${field.formid+button.name}"
                 name="${button.name}"
                 type="${button.type}"
