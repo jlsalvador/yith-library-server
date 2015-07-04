@@ -36,7 +36,7 @@ class GoogleAnalytics(object):
         if self.request.user is None:
             return USER_ATTR not in self.request.session
         else:
-            return self.request.user.allow_google_analytics
+            return self.request.user.allow_google_analytics is None
 
     def show_in_session(self):
         return self.request.session.get(USER_ATTR, False)
