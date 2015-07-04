@@ -9,7 +9,7 @@
              name="${name}"
              value="${true_val}"
              id="${oid}"
-             tal:attributes="checked cstruct == true_val;
+             tal:attributes="checked 'checked' if cstruct == true_val else None;
                              class css_class"
              />
       <span tal:omit-tag="" tal:content="field.title" />
