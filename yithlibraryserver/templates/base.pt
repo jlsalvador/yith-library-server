@@ -108,7 +108,7 @@
 
     <script type="text/javascript"
 	    tal:define="next next_url|nothing;
-			current_user request.user.get('email', '') if request.user else email|'';
+			current_user request.user.email if request.user else email|'';
 			current_provider request.session.get('current_provider', None) or provider|''">
 
       var YITH = window.YITH || {};
