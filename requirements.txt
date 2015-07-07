@@ -36,7 +36,7 @@ pyramid_tm==0.7
 pyramid_sna==0.3.1
 pyramid_sqlalchemy==1.2.2
 pyramid_webassets==0.9
-raven==3.3.4
+raven==5.3.1
 requests==1.2.3
 waitress==0.8.9
 newrelic==2.36.0.30
