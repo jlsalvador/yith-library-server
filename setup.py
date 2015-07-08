@@ -92,7 +92,7 @@ if platform.python_implementation() == 'PyPy':
 
 setup(
     name='yith-library-server',
-    version='0.2',
+    version='0.3',
     description='yith-library-server',
     long_description=README + '\n\n' +  CHANGES,
     classifiers=[

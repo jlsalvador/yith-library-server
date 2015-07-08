@@ -1,9 +1,24 @@
-0.3 (unreleased)
+0.3 (2015-07-07)
 ----------------
 - New features:
 
+  - Updated all the dependencies to newer versions
+  - Replaced persistence layer from MongoDB to PostgreSQL (Lorenzo Gil)
+  - New UI based on Bootstrap 3 (Lorenzo Gil)
+  - Assets concatenation and minification using webassets (Lorenzo Gil)
+  - Replaced custom oauth2 support with the oauthlib
+    implementation (Lorenzo Gil)
   - Reused package dependencies information between requirements.txt
     and setup.py (Fidel Ramos)
+  - Added back Python 3 support (Lorenzo Gil)
+  - Removed the custom DatetimeService and use freezegun instead for
+    mocking datetimes in tests (Lorenzo Gil)
+  - Add Microsoft Live Connect as a new IdP (Lorenzo Gil)
+  - Add a Contributions page with donations support via PayPal (Lorenzo Gil)
+
+- Buf fixes:
+
+  - Lots of fixed contributed by Lorenzo Gil, Sergio Rus and Alejandro Blanco
 
 0.2 (2013-02-03)
 ----------------
