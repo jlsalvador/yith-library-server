@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: yith-library-server 0.0\n"
 "Report-Msgid-Bugs-To: lorenzo.gil.sanchez@gmail.com\n"
-"POT-Creation-Date: 2015-06-09 22:25-0700\n"
-"PO-Revision-Date: 2015-06-09 22:29-0700\n"
+"POT-Creation-Date: 2015-07-14 04:19+0000\n"
+"PO-Revision-Date: 2015-07-14 04:21+0000\n"
 "Last-Translator: Lorenzo Gil Sanchez <lorenzo.gil.sanchez@gmail.com>\n"
 "Language-Team: es <LL@li.org>\n"
 "Language: \n"
@@ -25,8 +25,8 @@ msgstr "Enviar mensaje"
 
 #: yithlibraryserver/views.py:46
 #: yithlibraryserver/backups/templates/backups_index.pt:64
-#: yithlibraryserver/user/views.py:76 yithlibraryserver/user/views.py:176
 #: yithlibraryserver/oauth2/views.py:77 yithlibraryserver/oauth2/views.py:143
+#: yithlibraryserver/user/views.py:76 yithlibraryserver/user/views.py:176
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -47,6 +47,322 @@ msgstr "Email"
 #: yithlibraryserver/schemas.py:38
 msgid "Message"
 msgstr "Mensaje"
+
+#: yithlibraryserver/backups/views.py:98 yithlibraryserver/backups/views.py:93
+msgid "The passwords file is required to upload the passwords"
+msgstr "El fichero de contraseñas es necesario para subir las contraseñas"
+
+#: yithlibraryserver/backups/views.py:84
+#, python-format
+msgid "Congratulations, ${n_passwords} password has been imported"
+msgstr "Enhorabuena, ${n_passwords} contraseña ha sido importada"
+
+#: yithlibraryserver/backups/views.py:85
+#, python-format
+msgid "Congratulations, ${n_passwords} passwords have been imported"
+msgstr "Enhorabuena, ${n_passwords} contraseñas han sido importadas"
+
+#: yithlibraryserver/backups/views.py:68
+msgid "There was a problem reading your passwords file"
+msgstr "Hubo un problema releyendo su fichero de contraseñas"
+
+#: yithlibraryserver/backups/templates/backups_index.pt:9
+#: yithlibraryserver/backups/templates/backups_index.pt:14
+#: yithlibraryserver/templates/profile.pt:30
+msgid "Backup"
+msgstr "Copia de seguridad"
+
+#: yithlibraryserver/backups/templates/backups_index.pt:21
+msgid "Export passwords"
+msgstr "Exportar contraseñas"
+
+#: yithlibraryserver/backups/templates/backups_index.pt:24
+msgid ""
+"By clicking in the following button you will get a backup file with your "
+"password collection."
+msgstr ""
+"Al hacer click en el siguiente botón recibirás una copia de seguridad de tu\n"
+"colección de contraseñas."
+
+#: yithlibraryserver/backups/templates/backups_index.pt:27
+msgid "Download my passwords"
+msgstr "Descargar mis contraseñas"
+
+#: yithlibraryserver/backups/templates/backups_index.pt:32
+msgid "Import passwords"
+msgstr "Importar contraseñas"
+
+#: yithlibraryserver/backups/templates/backups_index.pt:37
+msgid ""
+"By uploading a backup file you will replace your existing password "
+"collection with the contents of that file."
+msgstr ""
+"Al subir un fichero de respaldo sustituirás tu colección de contraseñas\n"
+"actual con los contenidos  de ese fichero."
+
+#: yithlibraryserver/backups/templates/backups_index.pt:38
+msgid "Select a file:"
+msgstr "Selecciona un fichero:"
+
+#: yithlibraryserver/backups/templates/backups_index.pt:42
+msgid "Upload my passwords"
+msgstr "Subir mis contraseñas"
+
+#: yithlibraryserver/backups/templates/backups_index.pt:53
+msgid "Import confirmation"
+msgstr "Confirmación de importación"
+
+#: yithlibraryserver/backups/templates/backups_index.pt:57
+msgid "Are you sure you want to import a password backup file?"
+msgstr ""
+"¿Estás seguro de que quieres importar un fichero de respaldo de contraseñas?"
+
+#. Used in sentence: "This action will ${replace} your current password
+#. collection with the contents of the file you are uploading."
+#: yithlibraryserver/backups/templates/backups_index.pt:58
+msgid "replace"
+msgstr "sustituirá"
+
+#. Canonical text for ${replace} is: "replace"
+#: yithlibraryserver/backups/templates/backups_index.pt:58
+msgid ""
+"This action will ${replace} your current password collection with the "
+"contents of the file you are uploading."
+msgstr ""
+"Esta acción ${replace} tu colección de contraseñas actual con el contenido\n"
+"del fichero que estás subiendo."
+
+#: yithlibraryserver/backups/templates/backups_index.pt:59
+msgid "This action can not be undone."
+msgstr "Esta acción no se puede deshacer."
+
+#: yithlibraryserver/backups/templates/backups_index.pt:65
+#: yithlibraryserver/oauth2/templates/application_revoke_authorization.pt:20
+#: yithlibraryserver/oauth2/templates/developer_application_delete.pt:20
+msgid "Yes, I am sure"
+msgstr "Sí, estoy seguro"
+
+#: yithlibraryserver/oauth2/views.py:75 yithlibraryserver/oauth2/views.py:139
+msgid "Save application"
+msgstr "Guardar aplicación"
+
+#: yithlibraryserver/oauth2/views.py:141
+msgid "Delete application"
+msgstr "Borrar aplicación"
+
+#: yithlibraryserver/oauth2/views.py:101
+#, python-format
+msgid "The application ${app} was created successfully"
+msgstr "La aplicación ${app} fue creada correctamente"
+
+#: yithlibraryserver/oauth2/views.py:165 yithlibraryserver/user/views.py:259
+#: yithlibraryserver/user/views.py:300
+msgid "The changes were saved successfully"
+msgstr "Los cambios fueron guardados correctamente"
+
+#: yithlibraryserver/oauth2/views.py:218
+#, python-format
+msgid "The application ${app} was deleted successfully"
+msgstr "La aplicación ${app} fue borrada correctamente"
+
+#: yithlibraryserver/oauth2/views.py:387
+#, python-format
+msgid "The access to application ${app} has been revoked"
+msgstr "El acceso a la aplicación ${app} ha sido revocado"
+
+#: yithlibraryserver/oauth2/validator.py:45
+msgid "Access your passwords"
+msgstr "Acceder a tus contraseñas"
+
+#: yithlibraryserver/oauth2/validator.py:46
+msgid "Modify your passwords"
+msgstr "Modificar tus contraseñas"
+
+#: yithlibraryserver/oauth2/validator.py:47
+msgid "Access your user information"
+msgstr "Acceder tu información de usuario"
+
+#: yithlibraryserver/oauth2/schemas.py:53
+#: yithlibraryserver/oauth2/templates/developer_applications.pt:22
+msgid "Main URL"
+msgstr "URL Principal"
+
+#: yithlibraryserver/oauth2/schemas.py:57
+#: yithlibraryserver/oauth2/templates/developer_applications.pt:23
+msgid "Callback URL"
+msgstr "URL de retrollamada"
+
+#: yithlibraryserver/oauth2/schemas.py:61
+msgid "Authorized Origins"
+msgstr "Orígenes autorizados"
+
+#: yithlibraryserver/oauth2/schemas.py:62
+msgid "One per line. For example https://example.com"
+msgstr "Uno por linea. Por ejemplo https://example.com"
+
+#: yithlibraryserver/oauth2/schemas.py:68
+msgid "Production ready"
+msgstr "Listo para producción"
+
+#: yithlibraryserver/oauth2/schemas.py:73
+msgid "Image URL"
+msgstr "URL de la imagen"
+
+#: yithlibraryserver/oauth2/schemas.py:78
+msgid "Description"
+msgstr "Descripción"
+
+#: yithlibraryserver/oauth2/schemas.py:95
+msgid "Client Id"
+msgstr "Id de cliente"
+
+#: yithlibraryserver/oauth2/schemas.py:100
+msgid "Client secret"
+msgstr "Secreto de cliente"
+
+#: yithlibraryserver/oauth2/templates/application_revoke_authorization.pt:9
+msgid "Revoke Authorization"
+msgstr "Revocar Autorización"
+
+#: yithlibraryserver/oauth2/templates/application_revoke_authorization.pt:14
+msgid "Revoke authorization to application ${app-name}"
+msgstr "Revocar autorización a la aplicación ${app-name}"
+
+#: yithlibraryserver/oauth2/templates/application_revoke_authorization.pt:17
+msgid ""
+"Are you sure you want to revoke the authorization to the application ${app-"
+"name} with id ${app-id}?"
+msgstr ""
+"¿Estas seguro de que quieres revocar la autorización a la aplicación ${app-"
+"name} con\n"
+"el id ${app-id}?"
+
+#: yithlibraryserver/oauth2/templates/application_revoke_authorization.pt:21
+#: yithlibraryserver/oauth2/templates/developer_application_delete.pt:21
+msgid "No, take me back to the application list"
+msgstr "No, llevame de vuelta a la lista de aplicaciones"
+
+#: yithlibraryserver/oauth2/templates/developer_application_delete.pt:9
+msgid "Delete Application"
+msgstr "Borrar Aplicación"
+
+#: yithlibraryserver/oauth2/templates/developer_application_delete.pt:14
+msgid "Delete Application ${app-name}"
+msgstr "Editar Aplicación ${app-name}"
+
+#: yithlibraryserver/oauth2/templates/developer_application_delete.pt:17
+msgid ""
+"Are you sure you want to remove the application ${app-name} with id ${app-"
+"id}?"
+msgstr ""
+"¿Estas seguro de que quieres eliminar la aplicación ${app-name} con\n"
+"el id ${app-id}?"
+
+#: yithlibraryserver/oauth2/templates/application_authorization.pt:9
+msgid "Authorize Application"
+msgstr "Autorizar Aplicación"
+
+#: yithlibraryserver/oauth2/templates/application_authorization.pt:15
+msgid "Authorize Application ${app-name}"
+msgstr "Autorizar Aplicación ${app-name}"
+
+#: yithlibraryserver/oauth2/templates/application_authorization.pt:24
+msgid "App:"
+msgstr "App:"
+
+#: yithlibraryserver/oauth2/templates/application_authorization.pt:27
+msgid "Permissions:"
+msgstr "Permisos:"
+
+#: yithlibraryserver/oauth2/templates/application_authorization.pt:34
+msgid "Site:"
+msgstr "Sitio:"
+
+#: yithlibraryserver/oauth2/templates/application_authorization.pt:37
+msgid "Description:"
+msgstr "Descripción:"
+
+#: yithlibraryserver/oauth2/templates/application_authorization.pt:40
+msgid "Author:"
+msgstr "Autor:"
+
+#: yithlibraryserver/oauth2/templates/application_authorization.pt:59
+msgid "Allow access"
+msgstr "Permitir acceso"
+
+#: yithlibraryserver/oauth2/templates/application_authorization.pt:60
+msgid "No, thanks"
+msgstr "No, gracias"
+
+#: yithlibraryserver/oauth2/templates/application_authorization.pt:61
+msgid "You can revoke this authorization in the future."
+msgstr "Puedes revocar esta autorización en el futuro."
+
+#: yithlibraryserver/oauth2/templates/authorized_applications.pt:9
+#: yithlibraryserver/oauth2/templates/authorized_applications.pt:14
+msgid "Authorized Applications"
+msgstr "Aplicaciones autorizadas"
+
+#: yithlibraryserver/oauth2/templates/authorized_applications.pt:18
+msgid "You have not authorized any application yet."
+msgstr "No has autorizado ninguna aplicación aún."
+
+#: yithlibraryserver/oauth2/templates/authorized_applications.pt:20
+msgid "Start using a client"
+msgstr "Empieza a usar un cliente"
+
+#: yithlibraryserver/oauth2/templates/authorized_applications.pt:35
+msgid "Revoke authorization"
+msgstr "Revocar autorización"
+
+#: yithlibraryserver/oauth2/templates/developer_applications.pt:9
+msgid "Developer applications"
+msgstr "Aplicaciones de desarrolladores"
+
+#: yithlibraryserver/oauth2/templates/developer_applications.pt:14
+msgid "Developer Applications"
+msgstr "Aplicaciones de Desarrolladores"
+
+#: yithlibraryserver/oauth2/templates/developer_applications.pt:17
+msgid "You have not registered any developer application yet."
+msgstr "No has registrado ninguna aplicación de desarrollador aún."
+
+#: yithlibraryserver/oauth2/templates/developer_applications.pt:34
+msgid "Register new application"
+msgstr "Registrar nueva aplicación"
+
+#: yithlibraryserver/oauth2/templates/developer_application_edit.pt:9
+msgid "Edit Application"
+msgstr "Editar Aplicación"
+
+#: yithlibraryserver/oauth2/templates/developer_application_edit.pt:14
+msgid "Edit application ${app-name}"
+msgstr "Editar aplicación ${app-name}"
+
+#: yithlibraryserver/oauth2/templates/clients.pt:9
+#: yithlibraryserver/oauth2/templates/clients.pt:14
+msgid "Available Clients"
+msgstr "Clientes Disponibles"
+
+#: yithlibraryserver/oauth2/templates/clients.pt:16
+msgid ""
+"There are several clients to access your passwords collection. You can use "
+"the one that fits your needs better"
+msgstr ""
+"Hay varios clientes para acceder a tu colección de contraseñas. Puedes\n"
+"usar el que mejor se ajuste a tus necesidades"
+
+#: yithlibraryserver/oauth2/templates/clients.pt:26
+msgid "Access"
+msgstr "Acceder"
+
+#: yithlibraryserver/oauth2/templates/developer_application_new.pt:9
+msgid "New application"
+msgstr "Nueva aplicación"
+
+#: yithlibraryserver/oauth2/templates/developer_application_new.pt:14
+msgid "New Application"
+msgstr "Nueva Aplicación"
 
 #: yithlibraryserver/contributions/views.py:61
 msgid ""
@@ -207,14 +523,15 @@ msgstr "Alojamiento"
 
 #: yithlibraryserver/contributions/templates/contributions_index.pt:193
 msgid ""
-"Right now we are using ${heroku} as our hosting provider because their "
-"starter plan is free. We are really grateful to them but we realize that we "
-"are slowly growing up and at some point that plan will not be enough for us."
+"Right now we are using ${openshift} as our hosting provider because we got a "
+"grant from them due to the open source nature of Yith Library. We are really "
+"grateful to them but we realize that we are slowly growing up and at some "
+"point that grant will not be enough for us."
 msgstr ""
 "Ahora mismo estamos usando ${heroku} como nuestro proveedor de hosting\n"
-"porque su plan inicial es gratis. Estamos muy agradecidos a ellos pero\n"
-"somos conscientes de que estamos creciendo lentamente y en algún punto\n"
-"ese plan no será suficiente para nosotros."
+"porque nos han dado una beca debido a que Yith Library es software libre.\n"
+"Estamos muy agradecidos a ellos pero somos conscientes de que estamos\n"
+"creciendo lentamente y en algún punto esa beca no será suficiente."
 
 #: yithlibraryserver/contributions/templates/contributions_index.pt:194
 msgid "SSL Certificate"
@@ -223,20 +540,15 @@ msgstr "Certificado SSL"
 #: yithlibraryserver/contributions/templates/contributions_index.pt:195
 msgid ""
 "Having a strong SSL Certificate to serve all Yith Library resources is quite "
-"important in an application like this. We are using Heroku's wildcard "
-"certificate because Yith Library is being served as a subdomain of the "
-"herokuapp.com domain. This is great to get started in a secure and free way "
-"but we'd like to use the yithlibrary.com domain (which is just a redirection "
-"right now)."
+"important in an application like this. We are using free class 1 ${startssl} "
+"certificates but we would like to upgrade to class 2 certificates to provide "
+"a better experience for our users and avoid some browser's security warnings."
 msgstr ""
-"Tener un Certificado SSL fuerte para servir todos los recursos de Yith "
-"Library\n"
+"Tener un Certificado SSL fuerte para servir todos los recursos de Yith Library\n"
 "es bastante importante en una aplicación como esta. Estamos usando los\n"
-"certificados comodín de Heroku porque Yith Library se está sirviendo en un\n"
-"subdominio del dominio herokuapp.com. Esto está muy bien para empezar de\n"
-"una forma segura y gratuita pero nos gustaría usar el dominio yithlibrary."
-"com\n"
-"(el cuál es simplemente una redirección ahora mismo)."
+"certificados de clase 1 gratis de ${startssl} pero nos gustaria utilizar\n"
+"certificados de clase 2 para ofrecer una mejor experiencia de usuario a\n"
+"nuestros usuarios y evitar las advertencias de algunos navegadores."
 
 #: yithlibraryserver/contributions/templates/contributions_index.pt:196
 msgid "Email services"
@@ -245,7 +557,7 @@ msgstr "Servicios de correo electrónico"
 #: yithlibraryserver/contributions/templates/contributions_index.pt:197
 msgid ""
 "Yith Library can email you with a ciphered backup of your password "
-"collection once a month. We need to thank ${sendgrid} for allowing us to do "
+"collection once a month. We need to thank ${mandrill} for allowing us to do "
 "this using their free plan. But as with Heroku, we'd like to improve this "
 "feature but allowing our users to decide how frequently they want this email "
 "to be sent. Unfortunately the free plan is not enough for this and we would "
@@ -408,497 +720,76 @@ msgstr "Ok, coge mi dinero"
 msgid "No, maybe later"
 msgstr "No, quizás después"
 
-#: yithlibraryserver/backups/views.py:98 yithlibraryserver/backups/views.py:93
-msgid "The passwords file is required to upload the passwords"
-msgstr "El fichero de contraseñas es necesario para subir las contraseñas"
-
-#: yithlibraryserver/backups/views.py:84
-#, python-format
-msgid "Congratulations, ${n_passwords} password has been imported"
-msgstr "Enhorabuena, ${n_passwords} contraseña ha sido importada"
-
-#: yithlibraryserver/backups/views.py:85
-#, python-format
-msgid "Congratulations, ${n_passwords} passwords have been imported"
-msgstr "Enhorabuena, ${n_passwords} contraseñas han sido importadas"
-
-#: yithlibraryserver/backups/views.py:68
-msgid "There was a problem reading your passwords file"
-msgstr "Hubo un problema releyendo su fichero de contraseñas"
-
-#: yithlibraryserver/backups/templates/backups_index.pt:9
-#: yithlibraryserver/backups/templates/backups_index.pt:14
-#: yithlibraryserver/templates/profile.pt:30
-msgid "Backup"
-msgstr "Copia de seguridad"
-
-#: yithlibraryserver/backups/templates/backups_index.pt:21
-msgid "Export passwords"
-msgstr "Exportar contraseñas"
-
-#: yithlibraryserver/backups/templates/backups_index.pt:24
-msgid ""
-"By clicking in the following button you will get a backup file with your "
-"password collection."
-msgstr ""
-"Al hacer click en el siguiente botón recibirás una copia de seguridad de tu\n"
-"colección de contraseñas."
-
-#: yithlibraryserver/backups/templates/backups_index.pt:27
-msgid "Download my passwords"
-msgstr "Descargar mis contraseñas"
-
-#: yithlibraryserver/backups/templates/backups_index.pt:32
-msgid "Import passwords"
-msgstr "Importar contraseñas"
-
-#: yithlibraryserver/backups/templates/backups_index.pt:37
-msgid ""
-"By uploading a backup file you will replace your existing password "
-"collection with the contents of that file."
-msgstr ""
-"Al subir un fichero de respaldo sustituirás tu colección de contraseñas\n"
-"actual con los contenidos  de ese fichero."
-
-#: yithlibraryserver/backups/templates/backups_index.pt:38
-msgid "Select a file:"
-msgstr "Selecciona un fichero:"
-
-#: yithlibraryserver/backups/templates/backups_index.pt:42
-msgid "Upload my passwords"
-msgstr "Subir mis contraseñas"
-
-#: yithlibraryserver/backups/templates/backups_index.pt:53
-msgid "Import confirmation"
-msgstr "Confirmación de importación"
-
-#: yithlibraryserver/backups/templates/backups_index.pt:57
-msgid "Are you sure you want to import a password backup file?"
-msgstr ""
-"¿Estás seguro de que quieres importar un fichero de respaldo de contraseñas?"
-
-#. Used in sentence: "This action will ${replace} your current password
-#. collection with the contents of the file you are uploading."
-#: yithlibraryserver/backups/templates/backups_index.pt:58
-msgid "replace"
-msgstr "sustituirá"
-
-#. Canonical text for ${replace} is: "replace"
-#: yithlibraryserver/backups/templates/backups_index.pt:58
-msgid ""
-"This action will ${replace} your current password collection with the "
-"contents of the file you are uploading."
-msgstr ""
-"Esta acción ${replace} tu colección de contraseñas actual con el contenido\n"
-"del fichero que estás subiendo."
-
-#: yithlibraryserver/backups/templates/backups_index.pt:59
-msgid "This action can not be undone."
-msgstr "Esta acción no se puede deshacer."
-
-#: yithlibraryserver/backups/templates/backups_index.pt:65
-#: yithlibraryserver/oauth2/templates/application_revoke_authorization.pt:20
-#: yithlibraryserver/oauth2/templates/developer_application_delete.pt:20
-msgid "Yes, I am sure"
-msgstr "Sí, estoy seguro"
-
-#: yithlibraryserver/user/views.py:74
-msgid "Register into Yith Library"
-msgstr "Registrarme en Yith Library"
-
-#: yithlibraryserver/user/views.py:174
-msgid "Yes, I am sure. Destroy my account"
-msgstr "Sí, estoy seguro. Destruye mi cuenta"
-
-#: yithlibraryserver/user/views.py:233 yithlibraryserver/user/views.py:282
-msgid "Save changes"
-msgstr "Guardar cambios"
-
-#: yithlibraryserver/user/views.py:212
-msgid "Your account has been removed. Have a nice day!"
-msgstr "Tu cuenta ha sido eliminada. ¡Que tengas un buen día!"
-
-#: yithlibraryserver/user/views.py:259 yithlibraryserver/user/views.py:300
-#: yithlibraryserver/oauth2/views.py:165
-msgid "The changes were saved successfully"
-msgstr "Los cambios fueron guardados correctamente"
-
-#: yithlibraryserver/user/views.py:403
-msgid "Congratulations, your email has been successfully verified"
-msgstr "Enhorabuena, tu email ha sido verificado correctamente"
-
-#: yithlibraryserver/user/views.py:413
-msgid "Sorry, your verification code is not correct or has expired"
-msgstr "Lo siento, tu código de verificación no es correcto o ha caducado"
-
-#: yithlibraryserver/user/views.py:194
-msgid "You must remove your applications before destroying your account"
-msgstr "Debes eliminar tus aplicaciones antes de destruir tu cuenta"
-
-#: yithlibraryserver/user/views.py:219
-msgid "Thanks for reconsidering removing your account!"
-msgstr "¡Gracias por reconsiderar la eliminación de tu cuenta!"
-
-#: yithlibraryserver/user/views.py:346
-#, python-format
-msgid ""
-"Congratulations, ${n_merged} of your accounts has been merged into the "
-"current one"
-msgstr ""
-"Enhorabuena, ${n_merged} de tus cuentas ha sido mezclada correctamente con\n"
-"la cuenta actual"
-
-#: yithlibraryserver/user/views.py:347
-#, python-format
-msgid ""
-"Congratulations, ${n_merged} of your accounts have been merged into the "
-"current one"
-msgstr ""
-"Enhorabuena, ${n_merged} de tus cuentas han sido mezcladas correctamente "
-"con\n"
-"la cuenta actual"
-
-#: yithlibraryserver/user/views.py:355
-msgid "Not enough accounts for merging"
-msgstr "No hay suficientes cuentas para mezclar"
-
-#: yithlibraryserver/user/schemas.py:66
-msgid "First name"
-msgstr "Nombre"
-
-#: yithlibraryserver/user/schemas.py:71
-msgid "Last name"
-msgstr "Apellidos"
-
-#: yithlibraryserver/user/schemas.py:76
-msgid "Screen name"
-msgstr "Nombre a mostrar"
-
-#: yithlibraryserver/user/schemas.py:105
-msgid "Do you mind telling us your reasons?"
-msgstr "¿Te importa decirnos tus razones?"
-
-#: yithlibraryserver/user/schemas.py:106
-msgid "We want to get better!"
-msgstr "¡Queremos mejorar!"
-
-#: yithlibraryserver/user/schemas.py:114
-msgid "Allow statistics cookie"
-msgstr "Permitir cookie de estadísticas"
-
-#: yithlibraryserver/user/schemas.py:120
-msgid "Send my passwords to my email monthly"
-msgstr "Enviar mis contraseñas a mi email mensualmente"
-
-#: yithlibraryserver/user/schemas.py:122
-msgid "You will receive your passwords backup on the first day of the month"
-msgstr ""
-"Recibirás la copia de seguridad de tus contraseñas el primer día del mes"
-
-#: yithlibraryserver/user/idp.py:42
-#, python-format
-msgid "Log in with ${idp}"
-msgstr "Entrar con ${idp}"
-
-#: yithlibraryserver/user/templates/preferences.pt:9
-#: yithlibraryserver/user/templates/preferences.pt:14
-#: yithlibraryserver/templates/profile.pt:28
-msgid "Preferences"
-msgstr "Preferencias"
-
-#: yithlibraryserver/user/templates/destroy.pt:9
-#: yithlibraryserver/user/templates/destroy.pt:14
-#: yithlibraryserver/templates/profile.pt:49
-msgid "Destroy account"
-msgstr "Destruir cuenta"
-
-#: yithlibraryserver/user/templates/destroy.pt:18
-msgid "This account can not be destroyed"
-msgstr "Esta cuenta no se puede destruir"
-
-#: yithlibraryserver/user/templates/destroy.pt:19
-msgid ""
-"You can not destroy this account because you are the owner of an "
-"application. Please remove the application first."
-msgstr "No puedes destruir esta cuenta porque eres el dueño de una aplicación. Por favor elminar la aplicación primero."
-
-#: yithlibraryserver/user/templates/destroy.pt:20
-msgid "Go to my appplications"
-msgstr "Ir a mis aplicaciones"
-
-#: yithlibraryserver/user/templates/destroy.pt:25
-msgid "I am tired of using Yith Library"
-msgstr "Estoy cansado de usar Yith Library"
-
-#: yithlibraryserver/user/templates/destroy.pt:26
-msgid "We are very sorry to hear that, but hey, it's your decission!"
-msgstr "Sentimos mucho oir eso, pero ¡hey, es tu decisión!"
-
-#: yithlibraryserver/user/templates/destroy.pt:27
-msgid "Destroy my account ..."
-msgstr "Destruye mi cuenta ..."
-
-#: yithlibraryserver/user/templates/destroy.pt:31
-msgid "Do you really really really want to destroy your account?"
-msgstr "¿De verdad de la buena quieres destruir tu cuenta?"
-
-#: yithlibraryserver/user/templates/destroy.pt:35
-msgid ""
-"All your personal information and passwords will be removed from this server."
-msgstr ""
-"Toda tu información personal y contraseñas se eliminarán de este\n"
-"servidor."
-
-#: yithlibraryserver/user/templates/destroy.pt:37
-msgid "You will not be able to undo this operation. Think about it."
-msgstr "No podrás deshacer esta operación. Piensa en ello."
-
+#: yithlibraryserver/templates/base.pt:42
 #: yithlibraryserver/user/templates/login.pt:9
 #: yithlibraryserver/user/templates/login.pt:15
-#: yithlibraryserver/templates/base.pt:42
 msgid "Log in"
 msgstr "Entrar"
 
-#: yithlibraryserver/user/templates/user_information.pt:9
-msgid "User information"
-msgstr "Información de usuario"
+#: yithlibraryserver/templates/base.pt:51
+msgid "My passwords"
+msgstr "Mis contraseñas"
 
-#: yithlibraryserver/user/templates/user_information.pt:14
-#: yithlibraryserver/templates/profile.pt:26
-msgid "Personal information"
-msgstr "Información personal"
+#: yithlibraryserver/templates/base.pt:54
+msgid "Log out"
+msgstr "Salir"
 
-#: yithlibraryserver/user/templates/user_information.pt:24
-msgid "Member since:"
-msgstr "Miembro desde:"
+#: yithlibraryserver/templates/base.pt:62
+msgid "Welcome, new visitor!"
+msgstr "¡Bienvenido, visitante!"
 
-#: yithlibraryserver/user/templates/user_information.pt:29
-msgid "Last seen:"
-msgstr "Visto por última vez:"
+#: yithlibraryserver/templates/base.pt:63
+msgid "Welcome ${current-user}"
+msgstr "Bienvenido ${current-user}"
 
-#: yithlibraryserver/user/templates/user_information.pt:35
-msgid "Change your avatar at gravatar.com"
-msgstr "Cambia tu avatar en gravatar.com"
-
-#: yithlibraryserver/user/templates/user_information.pt:36
-msgid "Set your avatar at gravatar.com"
-msgstr "Pon tu avatar en gravatar.com"
-
-#: yithlibraryserver/user/templates/verify_email.pt:9
-#: yithlibraryserver/user/templates/email_verification_dialog.pt:6
-msgid "Email verification"
-msgstr "Verificación de email"
-
-#: yithlibraryserver/user/templates/verify_email.pt:14
-#: yithlibraryserver/user/templates/identity_providers.pt:55
-msgid "Email verified"
-msgstr "Email verificado"
-
-#: yithlibraryserver/user/templates/verify_email.pt:15
-#: yithlibraryserver/user/templates/identity_providers.pt:56
-msgid "Email not verified"
-msgstr "Email no verificado"
-
-#: yithlibraryserver/user/templates/verify_email.pt:19
-msgid "Now you can link several accounts to identify yourself."
-msgstr "Ahora puedes enlazar varias cuentas para identificarte."
-
-#. Used in sentence: "Go to your ${identity-providers} and follow the
-#. instructions."
-#: yithlibraryserver/user/templates/verify_email.pt:21
-msgid "identity providers page"
-msgstr "página de proveedores de identidad"
-
-#. Canonical text for ${identity-providers} is: "identity providers page"
-#: yithlibraryserver/user/templates/verify_email.pt:21
-msgid "Go to your ${identity-providers} and follow the instructions."
-msgstr "Ve a tu ${identity-providers} y sigue las instrucciones."
-
-#. Used in sentence: "It looks that your verification code is not correct.
-#. Please go to your ${profile-page} and generate a new one."
-#: yithlibraryserver/user/templates/verify_email.pt:26
-msgid "profile page"
-msgstr "página del perfil"
-
-#. Canonical text for ${profile-page} is: "profile page"
-#: yithlibraryserver/user/templates/verify_email.pt:25
+#: yithlibraryserver/templates/base.pt:64
 msgid ""
-"It looks that your verification code is not correct. Please go to your "
-"${profile-page} and generate a new one."
+"We are using cookies to get statistics about the usage of Yith Library. This "
+"is completely optional and we want to ask you if this is ok with you."
 msgstr ""
-"Parece que tu código de verificación no es correcto. Por favor ve a tu\n"
-"${profile-page} y genera uno nuevo."
+"Estamos usando cookies para obtener estadísticas sobre el uso de Yith "
+"Library.\n"
+"Esto es completamente opcional y nos gustaría preguntarte si te parece bien."
 
-#: yithlibraryserver/user/templates/register.pt:9
-msgid "Register new user"
-msgstr "Registro de nuevo usuario"
+#: yithlibraryserver/templates/base.pt:66
+msgid "Ok, I can handle one more cookie"
+msgstr "Ok, puedo soportar otra cookie"
 
-#: yithlibraryserver/user/templates/register.pt:15
-msgid "Welcome to the Yith Library!"
-msgstr "¡Bienvenido a Yith Library!"
+#: yithlibraryserver/templates/base.pt:67
+msgid "No, I don't want to be tracked"
+msgstr "No, no quiero ser rastreado"
 
-#: yithlibraryserver/user/templates/register.pt:18
-msgid "It looks like it's the first time you log into the Yith Library."
-msgstr "Parece que es la primera vez que entras en Yith Library"
+#: yithlibraryserver/templates/base.pt:98
+msgid "Follow us on Twitter!"
+msgstr "¡Síguenos en Twitter!"
 
-#. Used in sentence: "Click on the ${register} button to finish the
-#. registration process. Don't worry, we will not ask you for a new password.
-#. You already have enough of them."
-#: yithlibraryserver/user/templates/register.pt:20
-msgid "register"
-msgstr "registrarme"
+#: yithlibraryserver/templates/base.pt:98
+msgid "Fork us on GitHub!"
+msgstr "¡Copianos en Github!"
 
-#. Canonical text for ${register} is: "register"
-#: yithlibraryserver/user/templates/register.pt:20
-msgid ""
-"Click on the ${register} button to finish the registration process. Don't "
-"worry, we will not ask you for a new password. You already have enough of "
-"them."
-msgstr ""
-"Haz click en el botón ${register} para finalizar el proceso de registro.\n"
-"No te preocupes, no te pediremos una nueva contraseña. Ya tienes bastantes."
+#: yithlibraryserver/templates/base.pt:101
+msgid "FAQ"
+msgstr "Preguntas frecuentes"
 
-#: yithlibraryserver/user/templates/email_verification_dialog.pt:9
-msgid ""
-"An email with a verification link will be sent to ${user-email} to verify "
-"that you are its legitimate owner."
-msgstr ""
-"Un email con un enlace de verificación será enviado a ${user-email} para\n"
-"verificar que tú eres su dueño legítimo."
+#: yithlibraryserver/templates/base.pt:102
+#: yithlibraryserver/templates/tos.pt:9 yithlibraryserver/templates/tos.pt:16
+msgid "Terms of service"
+msgstr "Términos de servicio"
 
-#. Used in sentence: "All you need to do is click on the ${send-verification-
-#. email} button, go to your inbox and follow the instructions in the email."
-#.
-#: yithlibraryserver/user/templates/email_verification_dialog.pt:12
-#: yithlibraryserver/user/templates/email_verification_dialog.pt:26
-msgid "Send verification email"
-msgstr "Enviar email de verificación"
-
-#. Canonical text for ${send-verification-email} is: "Send verification email"
-#: yithlibraryserver/user/templates/email_verification_dialog.pt:12
-msgid ""
-"All you need to do is click on the ${send-verification-email} button, go to "
-"your inbox and follow the instructions in the email."
-msgstr ""
-"Sólo necesitas hacer click en el botón ${send-verification-email}, ir\n"
-"a tu bandeja de entrada y seguir las instrucciones en el email."
-
-#. Used in sentence: "The email message with the verification link has been
-#. sent. ${check-your-inbox}"
-#: yithlibraryserver/user/templates/email_verification_dialog.pt:15
-msgid "Go and check your inbox!"
-msgstr "¡Ve y comprueba tu bandeja de entrada!"
-
-#. Canonical text for ${check-your-inbox} is: "Go and check your inbox!"
-#: yithlibraryserver/user/templates/email_verification_dialog.pt:15
-msgid ""
-"The email message with the verification link has been sent. ${check-your-"
-"inbox}"
-msgstr ""
-"El mensaje de email con el enlace de verificación ha sido enviado. ${check-"
-"your-inbox}"
-
-#: yithlibraryserver/user/templates/email_verification_dialog.pt:18
-msgid "There was an error sending the verification link to your email address."
-msgstr ""
-"Hubo un error al enviar el enlace de verificación a tu dirección de email."
-
-#: yithlibraryserver/user/templates/email_verification_dialog.pt:22
-msgid "Close"
-msgstr "Cerrar"
-
-#: yithlibraryserver/user/templates/identity_providers.pt:9
-#: yithlibraryserver/user/templates/identity_providers.pt:14
-#: yithlibraryserver/templates/profile.pt:32
-msgid "Identity providers"
-msgstr "Proveedores de identidad"
-
-#: yithlibraryserver/user/templates/identity_providers.pt:17
-msgid "You are registered with the following accounts:"
-msgstr "Estas registrado con las siguientes cuentas:"
-
-#: yithlibraryserver/user/templates/identity_providers.pt:24
-msgid "Provider"
-msgstr "Proveedor"
-
-#: yithlibraryserver/user/templates/identity_providers.pt:25
-msgid "Passwords"
-msgstr "Contraseñas"
-
-#: yithlibraryserver/user/templates/identity_providers.pt:26
-msgid "Is current?"
-msgstr "¿Es la actual?"
-
-#: yithlibraryserver/user/templates/identity_providers.pt:27
-msgid "Is email verified?"
-msgstr "¿Está verificado el email?"
-
-#: yithlibraryserver/user/templates/identity_providers.pt:28
-msgid "Available actions"
-msgstr "Acciones disponibles"
-
-#: yithlibraryserver/user/templates/identity_providers.pt:49
-msgid "Number of passwords"
-msgstr "Número de contraseñas"
-
-#: yithlibraryserver/user/templates/identity_providers.pt:52
-msgid "Current"
-msgstr "Actual"
-
-#: yithlibraryserver/user/templates/identity_providers.pt:57
-msgid "No email available"
-msgstr "No hay email disponible"
-
-#: yithlibraryserver/user/templates/identity_providers.pt:61
-#: yithlibraryserver/user/templates/identity_providers.pt:63
-#: yithlibraryserver/templates/email_verified.pt:13
-msgid "Verify email address"
-msgstr "Verificar dirección de email"
-
-#: yithlibraryserver/user/templates/identity_providers.pt:73
-msgid "Merge my accounts"
-msgstr "Mezclar mis cuentas"
-
-#: yithlibraryserver/user/templates/identity_providers.pt:85
-msgid "Tip:"
-msgstr "Pista:"
-
-#: yithlibraryserver/user/templates/identity_providers.pt:85
-msgid ""
-"If you merge your accounts you will be able to access your passwords in a "
-"unified way: no matter which provider you use to log in you will always see "
-"the same set of passwords."
-msgstr ""
-"Si mezclas tus cuentas podrás acceder a tus contraseñas de una forma\n"
-" unificada: no importa con que proveedor accedas siempre verás el mismo\n"
-"conjunto de contraseñas."
-
-#: yithlibraryserver/templates/contact.pt:9
 #: yithlibraryserver/templates/base.pt:103
+#: yithlibraryserver/templates/contact.pt:9
 msgid "Contact"
 msgstr "Contacto"
+
+#: yithlibraryserver/templates/base.pt:104
+#: yithlibraryserver/templates/credits.pt:9
+#: yithlibraryserver/templates/credits.pt:16
+msgid "Credits"
+msgstr "Créditos"
 
 #: yithlibraryserver/templates/contact.pt:15
 msgid "Contact us"
 msgstr "Contacta con nosotros"
-
-#: yithlibraryserver/templates/credits.pt:9
-#: yithlibraryserver/templates/credits.pt:16
-#: yithlibraryserver/templates/base.pt:104
-msgid "Credits"
-msgstr "Créditos"
-
-#: yithlibraryserver/templates/credits.pt:19
-msgid "Software"
-msgstr "Software"
-
-#: yithlibraryserver/templates/credits.pt:21
-msgid "Yith Library is copyright of:"
-msgstr "El copyright de Yith Library es de:"
-
-#: yithlibraryserver/templates/credits.pt:29
-msgid "Media"
-msgstr "Imágenes"
 
 #: yithlibraryserver/templates/email_verified.pt:4
 msgid "Verified"
@@ -908,6 +799,12 @@ msgstr "Verificado"
 msgid "Unverified"
 msgstr "No verificado"
 
+#: yithlibraryserver/templates/email_verified.pt:13
+#: yithlibraryserver/user/templates/identity_providers.pt:61
+#: yithlibraryserver/user/templates/identity_providers.pt:63
+msgid "Verify email address"
+msgstr "Verificar dirección de email"
+
 #: yithlibraryserver/templates/form.pt:15
 msgid "There was a problem with your submission."
 msgstr "Hubo un problema con su petición"
@@ -915,11 +812,6 @@ msgstr "Hubo un problema con su petición"
 #: yithlibraryserver/templates/form.pt:16
 msgid "Errors have been highlighted below"
 msgstr "Los errores han sido destacados abajo"
-
-#: yithlibraryserver/templates/tos.pt:9 yithlibraryserver/templates/tos.pt:16
-#: yithlibraryserver/templates/base.pt:102
-msgid "Terms of service"
-msgstr "Términos de servicio"
 
 #: yithlibraryserver/templates/tos.pt:22
 msgid "Free software"
@@ -1121,54 +1013,26 @@ msgstr ""
 "Perdón si estos términos son algo imprecisos y vagos. Somos programadores,\n"
 "no abogados. Si tienes dudas, ${contact-url}."
 
-#: yithlibraryserver/templates/base.pt:51
-msgid "My passwords"
-msgstr "Mis contraseñas"
-
-#: yithlibraryserver/templates/base.pt:54
-msgid "Log out"
-msgstr "Salir"
-
-#: yithlibraryserver/templates/base.pt:62
-msgid "Welcome, new visitor!"
-msgstr "¡Bienvenido, visitante!"
-
-#: yithlibraryserver/templates/base.pt:63
-msgid "Welcome ${current-user}"
-msgstr "Bienvenido ${current-user}"
-
-#: yithlibraryserver/templates/base.pt:64
-msgid ""
-"We are using cookies to get statistics about the usage of Yith Library. This "
-"is completely optional and we want to ask you if this is ok with you."
-msgstr ""
-"Estamos usando cookies para obtener estadísticas sobre el uso de Yith "
-"Library.\n"
-"Esto es completamente opcional y nos gustaría preguntarte si te parece bien."
-
-#: yithlibraryserver/templates/base.pt:66
-msgid "Ok, I can handle one more cookie"
-msgstr "Ok, puedo soportar otra cookie"
-
-#: yithlibraryserver/templates/base.pt:67
-msgid "No, I don't want to be tracked"
-msgstr "No, no quiero ser rastreado"
-
-#: yithlibraryserver/templates/base.pt:98
-msgid "Follow us on Twitter!"
-msgstr "¡Síguenos en Twitter!"
-
-#: yithlibraryserver/templates/base.pt:98
-msgid "Fork us on GitHub!"
-msgstr "¡Copianos en Github!"
-
-#: yithlibraryserver/templates/base.pt:101
-msgid "FAQ"
-msgstr "Preguntas frecuentes"
-
 #: yithlibraryserver/templates/profile.pt:23
 msgid "Account"
 msgstr "Cuenta"
+
+#: yithlibraryserver/templates/profile.pt:26
+#: yithlibraryserver/user/templates/user_information.pt:14
+msgid "Personal information"
+msgstr "Información personal"
+
+#: yithlibraryserver/templates/profile.pt:28
+#: yithlibraryserver/user/templates/preferences.pt:9
+#: yithlibraryserver/user/templates/preferences.pt:14
+msgid "Preferences"
+msgstr "Preferencias"
+
+#: yithlibraryserver/templates/profile.pt:32
+#: yithlibraryserver/user/templates/identity_providers.pt:9
+#: yithlibraryserver/user/templates/identity_providers.pt:14
+msgid "Identity providers"
+msgstr "Proveedores de identidad"
 
 #: yithlibraryserver/templates/profile.pt:37
 msgid "Applications"
@@ -1181,6 +1045,24 @@ msgstr "Clientes autorizados"
 #: yithlibraryserver/templates/profile.pt:42
 msgid "Developer apps"
 msgstr "Aplicaciones de desarrolladores"
+
+#: yithlibraryserver/templates/profile.pt:49
+#: yithlibraryserver/user/templates/destroy.pt:9
+#: yithlibraryserver/user/templates/destroy.pt:14
+msgid "Destroy account"
+msgstr "Destruir cuenta"
+
+#: yithlibraryserver/templates/credits.pt:19
+msgid "Software"
+msgstr "Software"
+
+#: yithlibraryserver/templates/credits.pt:21
+msgid "Yith Library is copyright of:"
+msgstr "El copyright de Yith Library es de:"
+
+#: yithlibraryserver/templates/credits.pt:29
+msgid "Media"
+msgstr "Imágenes"
 
 #: yithlibraryserver/templates/home.pt:9
 msgid "Home"
@@ -1504,222 +1386,335 @@ msgstr ""
 msgid "I couldn't live a week without a private library."
 msgstr "No podía vivir una semana sin una biblioteca privada."
 
-#: yithlibraryserver/oauth2/views.py:75 yithlibraryserver/oauth2/views.py:139
-msgid "Save application"
-msgstr "Guardar aplicación"
+#: yithlibraryserver/user/views.py:74
+msgid "Register into Yith Library"
+msgstr "Registrarme en Yith Library"
 
-#: yithlibraryserver/oauth2/views.py:141
-msgid "Delete application"
-msgstr "Borrar aplicación"
+#: yithlibraryserver/user/views.py:174
+msgid "Yes, I am sure. Destroy my account"
+msgstr "Sí, estoy seguro. Destruye mi cuenta"
 
-#: yithlibraryserver/oauth2/views.py:101
+#: yithlibraryserver/user/views.py:233 yithlibraryserver/user/views.py:282
+msgid "Save changes"
+msgstr "Guardar cambios"
+
+#: yithlibraryserver/user/views.py:212
+msgid "Your account has been removed. Have a nice day!"
+msgstr "Tu cuenta ha sido eliminada. ¡Que tengas un buen día!"
+
+#: yithlibraryserver/user/views.py:403
+msgid "Congratulations, your email has been successfully verified"
+msgstr "Enhorabuena, tu email ha sido verificado correctamente"
+
+#: yithlibraryserver/user/views.py:413
+msgid "Sorry, your verification code is not correct or has expired"
+msgstr "Lo siento, tu código de verificación no es correcto o ha caducado"
+
+#: yithlibraryserver/user/views.py:194
+msgid "You must remove your applications before destroying your account"
+msgstr "Debes eliminar tus aplicaciones antes de destruir tu cuenta"
+
+#: yithlibraryserver/user/views.py:219
+msgid "Thanks for reconsidering removing your account!"
+msgstr "¡Gracias por reconsiderar la eliminación de tu cuenta!"
+
+#: yithlibraryserver/user/views.py:346
 #, python-format
-msgid "The application ${app} was created successfully"
-msgstr "La aplicación ${app} fue creada correctamente"
+msgid ""
+"Congratulations, ${n_merged} of your accounts has been merged into the "
+"current one"
+msgstr ""
+"Enhorabuena, ${n_merged} de tus cuentas ha sido mezclada correctamente con\n"
+"la cuenta actual"
 
-#: yithlibraryserver/oauth2/views.py:218
+#: yithlibraryserver/user/views.py:347
 #, python-format
-msgid "The application ${app} was deleted successfully"
-msgstr "La aplicación ${app} fue borrada correctamente"
+msgid ""
+"Congratulations, ${n_merged} of your accounts have been merged into the "
+"current one"
+msgstr ""
+"Enhorabuena, ${n_merged} de tus cuentas han sido mezcladas correctamente "
+"con\n"
+"la cuenta actual"
 
-#: yithlibraryserver/oauth2/views.py:387
+#: yithlibraryserver/user/views.py:355
+msgid "Not enough accounts for merging"
+msgstr "No hay suficientes cuentas para mezclar"
+
+#: yithlibraryserver/user/idp.py:42
 #, python-format
-msgid "The access to application ${app} has been revoked"
-msgstr "El acceso a la aplicación ${app} ha sido revocado"
+msgid "Log in with ${idp}"
+msgstr "Entrar con ${idp}"
 
-#: yithlibraryserver/oauth2/validator.py:45
-msgid "Access your passwords"
-msgstr "Acceder a tus contraseñas"
+#: yithlibraryserver/user/schemas.py:66
+msgid "First name"
+msgstr "Nombre"
 
-#: yithlibraryserver/oauth2/validator.py:46
-msgid "Modify your passwords"
-msgstr "Modificar tus contraseñas"
+#: yithlibraryserver/user/schemas.py:71
+msgid "Last name"
+msgstr "Apellidos"
 
-#: yithlibraryserver/oauth2/validator.py:47
-msgid "Access your user information"
-msgstr "Acceder tu información de usuario"
+#: yithlibraryserver/user/schemas.py:76
+msgid "Screen name"
+msgstr "Nombre a mostrar"
 
-#: yithlibraryserver/oauth2/schemas.py:53
-#: yithlibraryserver/oauth2/templates/developer_applications.pt:22
-msgid "Main URL"
-msgstr "URL Principal"
+#: yithlibraryserver/user/schemas.py:105
+msgid "Do you mind telling us your reasons?"
+msgstr "¿Te importa decirnos tus razones?"
 
-#: yithlibraryserver/oauth2/schemas.py:57
-#: yithlibraryserver/oauth2/templates/developer_applications.pt:23
-msgid "Callback URL"
-msgstr "URL de retrollamada"
+#: yithlibraryserver/user/schemas.py:106
+msgid "We want to get better!"
+msgstr "¡Queremos mejorar!"
 
-#: yithlibraryserver/oauth2/schemas.py:61
-msgid "Authorized Origins"
-msgstr "Orígenes autorizados"
+#: yithlibraryserver/user/schemas.py:114
+msgid "Allow statistics cookie"
+msgstr "Permitir cookie de estadísticas"
 
-#: yithlibraryserver/oauth2/schemas.py:62
-msgid "One per line. For example https://example.com"
-msgstr "Uno por linea. Por ejemplo https://example.com"
+#: yithlibraryserver/user/schemas.py:120
+msgid "Send my passwords to my email monthly"
+msgstr "Enviar mis contraseñas a mi email mensualmente"
 
-#: yithlibraryserver/oauth2/schemas.py:68
-msgid "Production ready"
-msgstr "Listo para producción"
-
-#: yithlibraryserver/oauth2/schemas.py:73
-msgid "Image URL"
-msgstr "URL de la imagen"
-
-#: yithlibraryserver/oauth2/schemas.py:78
-msgid "Description"
-msgstr "Descripción"
-
-#: yithlibraryserver/oauth2/schemas.py:95
-msgid "Client Id"
-msgstr "Id de cliente"
-
-#: yithlibraryserver/oauth2/schemas.py:100
-msgid "Client secret"
-msgstr "Secreto de cliente"
-
-#: yithlibraryserver/oauth2/templates/developer_applications.pt:9
-msgid "Developer applications"
-msgstr "Aplicaciones de desarrolladores"
-
-#: yithlibraryserver/oauth2/templates/developer_applications.pt:14
-msgid "Developer Applications"
-msgstr "Aplicaciones de Desarrolladores"
-
-#: yithlibraryserver/oauth2/templates/developer_applications.pt:17
-msgid "You have not registered any developer application yet."
-msgstr "No has registrado ninguna aplicación de desarrollador aún."
-
-#: yithlibraryserver/oauth2/templates/developer_applications.pt:34
-msgid "Register new application"
-msgstr "Registrar nueva aplicación"
-
-#: yithlibraryserver/oauth2/templates/developer_application_edit.pt:9
-msgid "Edit Application"
-msgstr "Editar Aplicación"
-
-#: yithlibraryserver/oauth2/templates/developer_application_edit.pt:14
-msgid "Edit application ${app-name}"
-msgstr "Editar aplicación ${app-name}"
-
-#: yithlibraryserver/oauth2/templates/clients.pt:9
-#: yithlibraryserver/oauth2/templates/clients.pt:14
-msgid "Available Clients"
-msgstr "Clientes Disponibles"
-
-#: yithlibraryserver/oauth2/templates/clients.pt:16
-msgid ""
-"There are several clients to access your passwords collection. You can use "
-"the one that fits your needs better"
+#: yithlibraryserver/user/schemas.py:122
+msgid "You will receive your passwords backup on the first day of the month"
 msgstr ""
-"Hay varios clientes para acceder a tu colección de contraseñas. Puedes\n"
-"usar el que mejor se ajuste a tus necesidades"
+"Recibirás la copia de seguridad de tus contraseñas el primer día del mes"
 
-#: yithlibraryserver/oauth2/templates/clients.pt:26
-msgid "Access"
-msgstr "Acceder"
+#: yithlibraryserver/user/templates/identity_providers.pt:17
+msgid "You are registered with the following accounts:"
+msgstr "Estas registrado con las siguientes cuentas:"
 
-#: yithlibraryserver/oauth2/templates/application_revoke_authorization.pt:9
-msgid "Revoke Authorization"
-msgstr "Revocar Autorización"
+#: yithlibraryserver/user/templates/identity_providers.pt:24
+msgid "Provider"
+msgstr "Proveedor"
 
-#: yithlibraryserver/oauth2/templates/application_revoke_authorization.pt:14
-msgid "Revoke authorization to application ${app-name}"
-msgstr "Revocar autorización a la aplicación ${app-name}"
+#: yithlibraryserver/user/templates/identity_providers.pt:25
+msgid "Passwords"
+msgstr "Contraseñas"
 
-#: yithlibraryserver/oauth2/templates/application_revoke_authorization.pt:17
+#: yithlibraryserver/user/templates/identity_providers.pt:26
+msgid "Is current?"
+msgstr "¿Es la actual?"
+
+#: yithlibraryserver/user/templates/identity_providers.pt:27
+msgid "Is email verified?"
+msgstr "¿Está verificado el email?"
+
+#: yithlibraryserver/user/templates/identity_providers.pt:28
+msgid "Available actions"
+msgstr "Acciones disponibles"
+
+#: yithlibraryserver/user/templates/identity_providers.pt:49
+msgid "Number of passwords"
+msgstr "Número de contraseñas"
+
+#: yithlibraryserver/user/templates/identity_providers.pt:52
+msgid "Current"
+msgstr "Actual"
+
+#: yithlibraryserver/user/templates/identity_providers.pt:55
+#: yithlibraryserver/user/templates/verify_email.pt:14
+msgid "Email verified"
+msgstr "Email verificado"
+
+#: yithlibraryserver/user/templates/identity_providers.pt:56
+#: yithlibraryserver/user/templates/verify_email.pt:15
+msgid "Email not verified"
+msgstr "Email no verificado"
+
+#: yithlibraryserver/user/templates/identity_providers.pt:57
+msgid "No email available"
+msgstr "No hay email disponible"
+
+#: yithlibraryserver/user/templates/identity_providers.pt:73
+msgid "Merge my accounts"
+msgstr "Mezclar mis cuentas"
+
+#: yithlibraryserver/user/templates/identity_providers.pt:85
+msgid "Tip:"
+msgstr "Pista:"
+
+#: yithlibraryserver/user/templates/identity_providers.pt:85
 msgid ""
-"Are you sure you want to revoke the authorization to the application ${app-"
-"name} with id ${app-id}?"
+"If you merge your accounts you will be able to access your passwords in a "
+"unified way: no matter which provider you use to log in you will always see "
+"the same set of passwords."
 msgstr ""
-"¿Estas seguro de que quieres revocar la autorización a la aplicación ${app-"
-"name} con\n"
-"el id ${app-id}?"
+"Si mezclas tus cuentas podrás acceder a tus contraseñas de una forma\n"
+" unificada: no importa con que proveedor accedas siempre verás el mismo\n"
+"conjunto de contraseñas."
 
-#: yithlibraryserver/oauth2/templates/application_revoke_authorization.pt:21
-#: yithlibraryserver/oauth2/templates/developer_application_delete.pt:21
-msgid "No, take me back to the application list"
-msgstr "No, llevame de vuelta a la lista de aplicaciones"
+#: yithlibraryserver/user/templates/verify_email.pt:9
+#: yithlibraryserver/user/templates/email_verification_dialog.pt:6
+msgid "Email verification"
+msgstr "Verificación de email"
 
-#: yithlibraryserver/oauth2/templates/developer_application_delete.pt:9
-msgid "Delete Application"
-msgstr "Borrar Aplicación"
+#: yithlibraryserver/user/templates/verify_email.pt:19
+msgid "Now you can link several accounts to identify yourself."
+msgstr "Ahora puedes enlazar varias cuentas para identificarte."
 
-#: yithlibraryserver/oauth2/templates/developer_application_delete.pt:14
-msgid "Delete Application ${app-name}"
-msgstr "Editar Aplicación ${app-name}"
+#. Used in sentence: "Go to your ${identity-providers} and follow the
+#. instructions."
+#: yithlibraryserver/user/templates/verify_email.pt:21
+msgid "identity providers page"
+msgstr "página de proveedores de identidad"
 
-#: yithlibraryserver/oauth2/templates/developer_application_delete.pt:17
+#. Canonical text for ${identity-providers} is: "identity providers page"
+#: yithlibraryserver/user/templates/verify_email.pt:21
+msgid "Go to your ${identity-providers} and follow the instructions."
+msgstr "Ve a tu ${identity-providers} y sigue las instrucciones."
+
+#. Used in sentence: "It looks that your verification code is not correct.
+#. Please go to your ${profile-page} and generate a new one."
+#: yithlibraryserver/user/templates/verify_email.pt:26
+msgid "profile page"
+msgstr "página del perfil"
+
+#. Canonical text for ${profile-page} is: "profile page"
+#: yithlibraryserver/user/templates/verify_email.pt:25
 msgid ""
-"Are you sure you want to remove the application ${app-name} with id ${app-"
-"id}?"
+"It looks that your verification code is not correct. Please go to your "
+"${profile-page} and generate a new one."
 msgstr ""
-"¿Estas seguro de que quieres eliminar la aplicación ${app-name} con\n"
-"el id ${app-id}?"
+"Parece que tu código de verificación no es correcto. Por favor ve a tu\n"
+"${profile-page} y genera uno nuevo."
 
-#: yithlibraryserver/oauth2/templates/developer_application_new.pt:9
-msgid "New application"
-msgstr "Nueva aplicación"
+#: yithlibraryserver/user/templates/register.pt:9
+msgid "Register new user"
+msgstr "Registro de nuevo usuario"
 
-#: yithlibraryserver/oauth2/templates/developer_application_new.pt:14
-msgid "New Application"
-msgstr "Nueva Aplicación"
+#: yithlibraryserver/user/templates/register.pt:15
+msgid "Welcome to the Yith Library!"
+msgstr "¡Bienvenido a Yith Library!"
 
-#: yithlibraryserver/oauth2/templates/application_authorization.pt:9
-msgid "Authorize Application"
-msgstr "Autorizar Aplicación"
+#: yithlibraryserver/user/templates/register.pt:18
+msgid "It looks like it's the first time you log into the Yith Library."
+msgstr "Parece que es la primera vez que entras en Yith Library"
 
-#: yithlibraryserver/oauth2/templates/application_authorization.pt:15
-msgid "Authorize Application ${app-name}"
-msgstr "Autorizar Aplicación ${app-name}"
+#. Used in sentence: "Click on the ${register} button to finish the
+#. registration process. Don't worry, we will not ask you for a new password.
+#. You already have enough of them."
+#: yithlibraryserver/user/templates/register.pt:20
+msgid "register"
+msgstr "registrarme"
 
-#: yithlibraryserver/oauth2/templates/application_authorization.pt:24
-msgid "App:"
-msgstr "App:"
+#. Canonical text for ${register} is: "register"
+#: yithlibraryserver/user/templates/register.pt:20
+msgid ""
+"Click on the ${register} button to finish the registration process. Don't "
+"worry, we will not ask you for a new password. You already have enough of "
+"them."
+msgstr ""
+"Haz click en el botón ${register} para finalizar el proceso de registro.\n"
+"No te preocupes, no te pediremos una nueva contraseña. Ya tienes bastantes."
 
-#: yithlibraryserver/oauth2/templates/application_authorization.pt:27
-msgid "Permissions:"
-msgstr "Permisos:"
+#: yithlibraryserver/user/templates/destroy.pt:18
+msgid "This account can not be destroyed"
+msgstr "Esta cuenta no se puede destruir"
 
-#: yithlibraryserver/oauth2/templates/application_authorization.pt:34
-msgid "Site:"
-msgstr "Sitio:"
+#: yithlibraryserver/user/templates/destroy.pt:19
+msgid ""
+"You can not destroy this account because you are the owner of an "
+"application. Please remove the application first."
+msgstr ""
+"No puedes destruir esta cuenta porque eres el dueño de una aplicación. Por "
+"favor elminar la aplicación primero."
 
-#: yithlibraryserver/oauth2/templates/application_authorization.pt:37
-msgid "Description:"
-msgstr "Descripción:"
+#: yithlibraryserver/user/templates/destroy.pt:20
+msgid "Go to my appplications"
+msgstr "Ir a mis aplicaciones"
 
-#: yithlibraryserver/oauth2/templates/application_authorization.pt:40
-msgid "Author:"
-msgstr "Autor:"
+#: yithlibraryserver/user/templates/destroy.pt:25
+msgid "I am tired of using Yith Library"
+msgstr "Estoy cansado de usar Yith Library"
 
-#: yithlibraryserver/oauth2/templates/application_authorization.pt:59
-msgid "Allow access"
-msgstr "Permitir acceso"
+#: yithlibraryserver/user/templates/destroy.pt:26
+msgid "We are very sorry to hear that, but hey, it's your decission!"
+msgstr "Sentimos mucho oir eso, pero ¡hey, es tu decisión!"
 
-#: yithlibraryserver/oauth2/templates/application_authorization.pt:60
-msgid "No, thanks"
-msgstr "No, gracias"
+#: yithlibraryserver/user/templates/destroy.pt:27
+msgid "Destroy my account ..."
+msgstr "Destruye mi cuenta ..."
 
-#: yithlibraryserver/oauth2/templates/application_authorization.pt:61
-msgid "You can revoke this authorization in the future."
-msgstr "Puedes revocar esta autorización en el futuro."
+#: yithlibraryserver/user/templates/destroy.pt:31
+msgid "Do you really really really want to destroy your account?"
+msgstr "¿De verdad de la buena quieres destruir tu cuenta?"
 
-#: yithlibraryserver/oauth2/templates/authorized_applications.pt:9
-#: yithlibraryserver/oauth2/templates/authorized_applications.pt:14
-msgid "Authorized Applications"
-msgstr "Aplicaciones autorizadas"
+#: yithlibraryserver/user/templates/destroy.pt:35
+msgid ""
+"All your personal information and passwords will be removed from this server."
+msgstr ""
+"Toda tu información personal y contraseñas se eliminarán de este\n"
+"servidor."
 
-#: yithlibraryserver/oauth2/templates/authorized_applications.pt:18
-msgid "You have not authorized any application yet."
-msgstr "No has autorizado ninguna aplicación aún."
+#: yithlibraryserver/user/templates/destroy.pt:37
+msgid "You will not be able to undo this operation. Think about it."
+msgstr "No podrás deshacer esta operación. Piensa en ello."
 
-#: yithlibraryserver/oauth2/templates/authorized_applications.pt:20
-msgid "Start using a client"
-msgstr "Empieza a usar un cliente"
+#: yithlibraryserver/user/templates/user_information.pt:9
+msgid "User information"
+msgstr "Información de usuario"
 
-#: yithlibraryserver/oauth2/templates/authorized_applications.pt:35
-msgid "Revoke authorization"
-msgstr "Revocar autorización"
+#: yithlibraryserver/user/templates/user_information.pt:24
+msgid "Member since:"
+msgstr "Miembro desde:"
 
-#~ msgid "There were an error while saving your changes"
-#~ msgstr "Hubo un error al guardar tus cambios"
+#: yithlibraryserver/user/templates/user_information.pt:29
+msgid "Last seen:"
+msgstr "Visto por última vez:"
+
+#: yithlibraryserver/user/templates/user_information.pt:35
+msgid "Change your avatar at gravatar.com"
+msgstr "Cambia tu avatar en gravatar.com"
+
+#: yithlibraryserver/user/templates/user_information.pt:36
+msgid "Set your avatar at gravatar.com"
+msgstr "Pon tu avatar en gravatar.com"
+
+#: yithlibraryserver/user/templates/email_verification_dialog.pt:9
+msgid ""
+"An email with a verification link will be sent to ${user-email} to verify "
+"that you are its legitimate owner."
+msgstr ""
+"Un email con un enlace de verificación será enviado a ${user-email} para\n"
+"verificar que tú eres su dueño legítimo."
+
+#. Used in sentence: "All you need to do is click on the ${send-verification-
+#. email} button, go to your inbox and follow the instructions in the email."
+#.
+#: yithlibraryserver/user/templates/email_verification_dialog.pt:12
+#: yithlibraryserver/user/templates/email_verification_dialog.pt:26
+msgid "Send verification email"
+msgstr "Enviar email de verificación"
+
+#. Canonical text for ${send-verification-email} is: "Send verification email"
+#: yithlibraryserver/user/templates/email_verification_dialog.pt:12
+msgid ""
+"All you need to do is click on the ${send-verification-email} button, go to "
+"your inbox and follow the instructions in the email."
+msgstr ""
+"Sólo necesitas hacer click en el botón ${send-verification-email}, ir\n"
+"a tu bandeja de entrada y seguir las instrucciones en el email."
+
+#. Used in sentence: "The email message with the verification link has been
+#. sent. ${check-your-inbox}"
+#: yithlibraryserver/user/templates/email_verification_dialog.pt:15
+msgid "Go and check your inbox!"
+msgstr "¡Ve y comprueba tu bandeja de entrada!"
+
+#. Canonical text for ${check-your-inbox} is: "Go and check your inbox!"
+#: yithlibraryserver/user/templates/email_verification_dialog.pt:15
+msgid ""
+"The email message with the verification link has been sent. ${check-your-"
+"inbox}"
+msgstr ""
+"El mensaje de email con el enlace de verificación ha sido enviado. ${check-"
+"your-inbox}"
+
+#: yithlibraryserver/user/templates/email_verification_dialog.pt:18
+msgid "There was an error sending the verification link to your email address."
+msgstr ""
+"Hubo un error al enviar el enlace de verificación a tu dirección de email."
+
+#: yithlibraryserver/user/templates/email_verification_dialog.pt:22
+msgid "Close"
+msgstr "Cerrar"
