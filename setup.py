@@ -137,5 +137,5 @@ setup(
     yith_announce = yithlibraryserver.scripts.announce:announce
     yith_build_assets = yithlibraryserver.scripts.buildassets:buildassets
     yith_create_db = yithlibraryserver.scripts.createdb:createdb
-    yith_mongo2postgres = yithlibraryserver.scripts.mongo2postgres:mongo2postgres""",
+    yith_clean_access_codes = yithlibraryserver.scripts.clean_access_codes:clean_access_codes""",
 )
