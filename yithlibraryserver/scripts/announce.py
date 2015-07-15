@@ -26,6 +26,8 @@ from pyramid_mailer import get_mailer
 
 from pyramid_sqlalchemy import Session
 
+from sqlalchemy.sql.expression import true
+
 import transaction
 
 from yithlibraryserver.compat import urlparse
@@ -37,7 +39,7 @@ from yithlibraryserver.user.models import User
 
 def get_all_users_with_passwords_and_email():
     for user in Session.query(User).filter(
-            User.email_verified == True, User.email != ''):
+            User.email_verified == true(), User.email != ''):
         if len(user.passwords) > 0:
             yield user
 

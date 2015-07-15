@@ -31,7 +31,9 @@ from pyramid.httpexceptions import HTTPUnauthorized
 from pyramid.view import view_config
 
 from pyramid_sqlalchemy import Session
+
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.sql.expression import true
 
 from oauthlib.oauth2 import (
     AccessDeniedError,
@@ -397,5 +399,5 @@ def revoke_application(request):
 @view_config(route_name='oauth2_clients',
              renderer='templates/clients.pt')
 def clients(request):
-    apps = Session.query(Application).filter(Application.production_ready == True)
+    apps = Session.query(Application).filter(Application.production_ready == true())
     return {'apps': apps}

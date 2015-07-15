@@ -18,6 +18,7 @@
 
 from pyramid_sqlalchemy import Session
 from sqlalchemy import desc, func, select
+from sqlalchemy.sql.expression import true
 
 from yithlibraryserver.oauth2.models import Application
 from yithlibraryserver.password.models import Password
@@ -125,10 +126,10 @@ def statistics():
 
         # How many users are verified
         n_verified = Session.query(User).filter(
-            User.email_verified == True).count()
+            User.email_verified == true()).count()
         # How many users allow the analytics cookie
         n_allow_cookie = Session.query(User).filter(
-            User.allow_google_analytics == True).count()
+            User.allow_google_analytics == true()).count()
 
         # Identity providers
         by_identity = Session.query(

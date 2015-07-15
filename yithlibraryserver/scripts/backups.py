@@ -21,6 +21,8 @@ import datetime
 from pyramid_sqlalchemy import Session
 
 from sqlalchemy import extract
+from sqlalchemy.sql.expression import true
+
 import transaction
 
 from yithlibraryserver.backups.email import send_passwords
@@ -33,8 +35,8 @@ from yithlibraryserver.user.models import User
 def get_all_users(when):
     hour = when.hour
     return Session.query(User).filter(
-        User.send_passwords_periodically == True,
-        User.email_verified == True,
+        User.send_passwords_periodically == true(),
+        User.email_verified == true(),
         extract('hour', User.creation) == hour,
     ).order_by(User.creation)
 
