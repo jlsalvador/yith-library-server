@@ -33,16 +33,16 @@ from yithlibraryserver.user.models import User
 def get_all_users(when):
     hour = when.hour
     return Session.query(User).filter(
-        User.send_passwords_periodically==True,
-        User.email_verified==True,
-        extract('hour', User.creation)==hour,
+        User.send_passwords_periodically == True,
+        User.email_verified == True,
+        extract('hour', User.creation) == hour,
     ).order_by(User.creation)
 
 
 def get_selected_users(*emails):
     for email in emails:
         for user in Session.query(User).filter(
-                User.email==email
+                User.email == email
         ).order_by(User.creation):
             yield user
 

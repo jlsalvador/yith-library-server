@@ -5,8 +5,11 @@ Beaker==1.6.4            # required by pyramid_beaker
 colander==1.0b1          # required by deform
 Chameleon==2.18          # required by deform, pyramid_chameleon, lingua
 PasteDeploy==1.5.2       # required by pyramid
+mccabe==0.3.1		 # required by flake8
+pep8==1.5.7		 # required by flake8
 peppercorn==0.5          # required by deform
 polib==1.0.6             # required by lingua
+pyflakes==0.8.1		 # required by flake8
 pytz==2014.9             # required by Babel
 repoze.lru==0.6          # required by pyramid
 repoze.sendmail==4.1     # required by pyramid_mailer
@@ -38,6 +41,7 @@ raven==5.3.1
 requests==1.2.3
 waitress==0.8.9
 newrelic==2.36.0.30
+flake8==2.4.1
 
 # python2 #
 wsgiref==0.1.2  # required only in Heroku (which uses Python 2)

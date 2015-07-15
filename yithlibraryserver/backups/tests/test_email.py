@@ -69,7 +69,7 @@ class SendPasswordsTests(unittest.TestCase):
             Session.flush()
             user_id = user.id
 
-        user = Session.query(User).filter(User.id==user_id).one()
+        user = Session.query(User).filter(User.id == user_id).one()
 
         request = DummyRequest()
         mailer = get_mailer(request)
@@ -88,11 +88,11 @@ class SendPasswordsTests(unittest.TestCase):
 
         # add some passwords
         password1 = Password(service='testing1',
-                            secret='s3cr3t1',
-                            user=user)
+                             secret='s3cr3t1',
+                             user=user)
         password2 = Password(service='testing2',
-                            secret='s3cr3t2',
-                            user=user)
+                             secret='s3cr3t2',
+                             user=user)
 
         with transaction.manager:
             Session.add(user)
@@ -101,7 +101,7 @@ class SendPasswordsTests(unittest.TestCase):
             Session.flush()
             user_id = user.id
 
-        user = Session.query(User).filter(User.id==user_id).one()
+        user = Session.query(User).filter(User.id == user_id).one()
 
         request = DummyRequest()
         mailer = get_mailer(request)

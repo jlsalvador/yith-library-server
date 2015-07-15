@@ -63,7 +63,7 @@ class UtilsTests(unittest.TestCase):
             Session.flush()
             user_id = user.id
 
-        user = Session.query(User).filter(User.id==user_id).one()
+        user = Session.query(User).filter(User.id == user_id).one()
 
         self.assertEqual(get_user_passwords(user), [])
 
@@ -84,7 +84,7 @@ class UtilsTests(unittest.TestCase):
             Session.flush()
             user_id = user.id
 
-        user = Session.query(User).filter(User.id==user_id).one()
+        user = Session.query(User).filter(User.id == user_id).one()
 
         self.assertEqual(get_user_passwords(user), [{
             'account': '',

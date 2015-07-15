@@ -56,7 +56,7 @@ class CORSManager(object):
     def _get_allowed_origins_for_client(self, request, client_id):
         try:
             app = Session.query(Application).filter(
-                Application.id==client_id
+                Application.id == client_id
             ).one()
             return app.authorized_origins
         except NoResultFound:

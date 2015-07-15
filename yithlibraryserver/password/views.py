@@ -92,8 +92,8 @@ class PasswordRESTView(object):
     def _get_password(self):
         try:
             return Session.query(Password).filter(
-                Password.id==self.password_id,
-                Password.user==self.request.user,
+                Password.id == self.password_id,
+                Password.user == self.request.user,
             ).one()
         except NoResultFound:
             return None

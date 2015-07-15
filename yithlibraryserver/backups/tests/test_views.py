@@ -182,7 +182,7 @@ class ViewTests(TestCase):
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/backup')
         self.assertEqual(2, Session.query(Password).count())
-        user = Session.query(User).filter(User.id==user_id).one()
+        user = Session.query(User).filter(User.id == user_id).one()
         self.assertEqual(len(user.passwords), 2)
 
     def test_backups_import_backup_version_0_2(self):
@@ -198,7 +198,7 @@ class ViewTests(TestCase):
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/backup')
         self.assertEqual(2, Session.query(Password).count())
-        user = Session.query(User).filter(User.id==user_id).one()
+        user = Session.query(User).filter(User.id == user_id).one()
         self.assertEqual(len(user.passwords), 2)
         password1 = user.passwords[0]
         password2 = user.passwords[1]

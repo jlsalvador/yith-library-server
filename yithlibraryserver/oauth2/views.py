@@ -126,7 +126,7 @@ def developer_application_edit(request):
         return HTTPBadRequest()
 
     try:
-        app = Session.query(Application).filter(Application.id==app_id).one()
+        app = Session.query(Application).filter(Application.id == app_id).one()
     except NoResultFound:
         return HTTPNotFound()
 
@@ -152,7 +152,7 @@ def developer_application_edit(request):
             return {'form': e.render(), 'app': app}
 
         # the data is fine, save into the db
-        app.name =  appstruct['name']
+        app.name = appstruct['name']
         app.main_url = appstruct['main_url']
         app.callback_url = appstruct['callback_url']
         app.authorized_origins = appstruct['authorized_origins']
@@ -204,7 +204,7 @@ def developer_application_delete(request):
         return HTTPBadRequest()
 
     try:
-        app = Session.query(Application).filter(Application.id==app_id).one()
+        app = Session.query(Application).filter(Application.id == app_id).one()
     except NoResultFound:
         return HTTPNotFound()
 
@@ -248,11 +248,11 @@ class AuthorizationEndpoint(object):
 
             try:
                 auth_app = Session.query(AuthorizedApplication).filter(
-                    AuthorizedApplication.user==self.request.user,
-                    AuthorizedApplication.scope==scopes,
-                    AuthorizedApplication.redirect_uri==credentials['redirect_uri'],
-                    AuthorizedApplication.response_type==credentials['response_type'],
-                    AuthorizedApplication.application==app,
+                    AuthorizedApplication.user == self.request.user,
+                    AuthorizedApplication.scope == scopes,
+                    AuthorizedApplication.redirect_uri == credentials['redirect_uri'],
+                    AuthorizedApplication.response_type == credentials['response_type'],
+                    AuthorizedApplication.application == app,
                 ).one()
             except NoResultFound:
                 auth_app = None
@@ -306,13 +306,13 @@ class AuthorizationEndpoint(object):
                 )
 
                 app = Session.query(Application).filter(
-                    Application.id==credentials['client_id'],
+                    Application.id == credentials['client_id'],
                 ).one()
 
                 try:
                     auth_app = Session.query(AuthorizedApplication).filter(
-                        AuthorizedApplication.user==self.request.user,
-                        AuthorizedApplication.application==app,
+                        AuthorizedApplication.user == self.request.user,
+                        AuthorizedApplication.application == app,
                     ).one()
                 except NoResultFound:
                     auth_app = AuthorizedApplication(
@@ -368,7 +368,7 @@ def revoke_application(request):
         return HTTPBadRequest()
 
     try:
-        app = Session.query(Application).filter(Application.id==app_id).one()
+        app = Session.query(Application).filter(Application.id == app_id).one()
     except NoResultFound:
         return HTTPNotFound()
 
@@ -377,8 +377,8 @@ def revoke_application(request):
     if 'submit' in request.POST:
 
         authorized_apps = Session.query(AuthorizedApplication).filter(
-            AuthorizedApplication.application==app,
-            AuthorizedApplication.user==request.user
+            AuthorizedApplication.application == app,
+            AuthorizedApplication.user == request.user
         ).all()
         for authorized_app in authorized_apps:
             Session.delete(authorized_app)
@@ -397,5 +397,5 @@ def revoke_application(request):
 @view_config(route_name='oauth2_clients',
              renderer='templates/clients.pt')
 def clients(request):
-    apps = Session.query(Application).filter(Application.production_ready==True)
+    apps = Session.query(Application).filter(Application.production_ready == True)
     return {'apps': apps}

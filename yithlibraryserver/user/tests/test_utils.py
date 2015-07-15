@@ -116,7 +116,7 @@ class RegisterOrUpdateTests(unittest.TestCase):
         }, '/next')
         self.assertEqual(response.status, '302 Found')
         self.assertEqual(response.location, '/next')
-        user = Session.query(User).filter(User.id==user_id).one()
+        user = Session.query(User).filter(User.id == user_id).one()
         self.assertEqual(user.email, 'john@example.com')
         self.assertEqual(user.last_name, 'Doe')
         self.assertEqual(user.allow_google_analytics, True)

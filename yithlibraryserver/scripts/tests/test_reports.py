@@ -174,15 +174,15 @@ class ApplicationsReportTests(BaseReportTests):
             Session.add(user)
 
             app1 = Application(user=user,
-                              name='Test application 1',
-                              main_url='http://example.com',
-                              callback_url='http://example.com/callback')
+                               name='Test application 1',
+                               main_url='http://example.com',
+                               callback_url='http://example.com/callback')
             Session.add(app1)
 
             app2 = Application(user=user,
-                              name='Test application 2',
-                              main_url='http://2.example.com',
-                              callback_url='http://2.example.com/callback')
+                               name='Test application 2',
+                               main_url='http://2.example.com',
+                               callback_url='http://2.example.com/callback')
             Session.add(app2)
 
         sys.argv = ['notused', self.conf_file_path]
@@ -323,10 +323,10 @@ class StatisticsReportTests(BaseReportTests):
             Session.add(identity9)
 
             user10 = User(first_name='Travis',
-                         last_name='Doe',
-                         email='',
-                         email_verified=False,
-                         allow_google_analytics=False)
+                          last_name='Doe',
+                          email='',
+                          email_verified=False,
+                          allow_google_analytics=False)
             identity10 = ExternalIdentity(user=user1, provider='persona',
                                           external_id='2')
             Session.add(user10)

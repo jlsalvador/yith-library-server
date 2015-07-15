@@ -190,7 +190,7 @@ class ViewTests(testing.TestCase):
 
         # even if the response from twitter included a different
         # screen_name, our user will not be updated
-        new_user = Session.query(User).filter(User.id==user_id).one()
+        new_user = Session.query(User).filter(User.id == user_id).one()
         self.assertEqual(new_user.screen_name, 'Johnny')
 
     @freeze_time('2012-01-10 15:31:11')

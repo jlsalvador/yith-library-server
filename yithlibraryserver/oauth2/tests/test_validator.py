@@ -161,14 +161,14 @@ class RequestValidatorTests(TestCase):
     @freeze_time('2012-01-10 15:31:11')
     def test_save_authorization_code(self):
         rv, request = self._create_request_validator()
-        request.user = Session.query(User).filter(User.id==self.user_id).one()
+        request.user = Session.query(User).filter(User.id == self.user_id).one()
         request.client = rv.get_client(self.app_id)
         request.scopes = ['read-passwords', 'write-passwords']
         request.redirect_uri = 'https://example.com/callback'
         rv.save_authorization_code(self.app_id, {'code': 'abcdef'}, request)
 
         auth_code = Session.query(AuthorizationCode).filter(
-            AuthorizationCode.code=='abcdef',
+            AuthorizationCode.code == 'abcdef',
         ).one()
         self.assertEquals(auth_code.user_id, self.user_id)
         self.assertEquals(auth_code.application_id, self.app_id)
@@ -240,7 +240,7 @@ class RequestValidatorTests(TestCase):
             rv, request = self._create_request_validator()
             client = rv.get_client(self.app_id)
 
-            request.user = Session.query(User).filter(User.id==self.user_id).one()
+            request.user = Session.query(User).filter(User.id == self.user_id).one()
             request.client = client
             request.scopes = ['read-passwords', 'write-passwords']
             request.redirect_uri = 'https://example.com/callback'
@@ -253,7 +253,7 @@ class RequestValidatorTests(TestCase):
     def test_validate_code_good(self):
         with freeze_time('2012-01-10 15:31:11'):
             rv, request = self._create_request_validator()
-            request.user = Session.query(User).filter(User.id==self.user_id).one()
+            request.user = Session.query(User).filter(User.id == self.user_id).one()
             request.client = rv.get_client(self.app_id)
             request.scopes = ['read-passwords', 'write-passwords']
             request.redirect_uri = 'https://example.com/callback'
@@ -284,7 +284,7 @@ class RequestValidatorTests(TestCase):
     @freeze_time('2012-01-10 15:31:11')
     def test_confirm_redirect_uri_bad_redirect_uri(self):
         rv, request = self._create_request_validator()
-        request.user = Session.query(User).filter(User.id==self.user_id).one()
+        request.user = Session.query(User).filter(User.id == self.user_id).one()
         request.client = rv.get_client(self.app_id)
         request.scopes = ['read-passwords', 'write-passwords']
         request.redirect_uri = 'https://example.com/callback'
@@ -299,7 +299,7 @@ class RequestValidatorTests(TestCase):
     @freeze_time('2012-01-10 15:31:11')
     def test_confirm_redirect_uri_good_redirect_uri(self):
         rv, request = self._create_request_validator()
-        request.user = Session.query(User).filter(User.id==self.user_id).one()
+        request.user = Session.query(User).filter(User.id == self.user_id).one()
         request.client = rv.get_client(self.app_id)
         request.scopes = ['read-passwords', 'write-passwords']
         request.redirect_uri = 'https://example.com/callback'
@@ -332,13 +332,13 @@ class RequestValidatorTests(TestCase):
             'token_type': 'Bearer',
             'refresh_token': 'lmnopq',
         }
-        request.user = Session.query(User).filter(User.id==self.user_id).one()
+        request.user = Session.query(User).filter(User.id == self.user_id).one()
         request.scopes = ['read-passwords', 'write-passwords']
         request.client = rv.get_client(self.app_id)
         rv.save_bearer_token(token, request)
 
         access_code = Session.query(AccessCode).filter(
-            AccessCode.code=='fghijk'
+            AccessCode.code == 'fghijk'
         ).one()
         self.assertEquals(access_code.code, 'fghijk')
         self.assertEquals(access_code.code_type, 'Bearer')
@@ -352,7 +352,7 @@ class RequestValidatorTests(TestCase):
     @freeze_time('2012-01-10 15:31:11')
     def test_invalidate_authorization_code(self):
         rv, request = self._create_request_validator()
-        request.user = Session.query(User).filter(User.id==self.user_id).one()
+        request.user = Session.query(User).filter(User.id == self.user_id).one()
         request.client = rv.get_client(self.app_id)
         request.scopes = ['read-passwords', 'write-passwords']
         request.redirect_uri = 'https://example.com/callback'
@@ -363,7 +363,7 @@ class RequestValidatorTests(TestCase):
         rv.invalidate_authorization_code(self.app_id, 'abcdef', request)
         try:
             auth_code = Session.query(AuthorizationCode).filter(
-                AuthorizationCode.code=='abcdef',
+                AuthorizationCode.code == 'abcdef',
             ).one()
         except NoResultFound:
             auth_code = None
@@ -386,7 +386,7 @@ class RequestValidatorTests(TestCase):
                 'token_type': 'Bearer',
                 'refresh_token': 'lmnopq',
             }
-            request.user = Session.query(User).filter(User.id==self.user_id).one()
+            request.user = Session.query(User).filter(User.id == self.user_id).one()
             request.scopes = ['read-passwords', 'write-passwords']
             request.client = rv.get_client(self.app_id)
             rv.save_bearer_token(token, request)
@@ -409,7 +409,7 @@ class RequestValidatorTests(TestCase):
                 'token_type': 'Bearer',
                 'refresh_token': 'lmnopq',
             }
-            request.user = Session.query(User).filter(User.id==self.user_id).one()
+            request.user = Session.query(User).filter(User.id == self.user_id).one()
             request.scopes = ['read-passwords', 'write-passwords']
             request.client = rv.get_client(self.app_id)
             rv.save_bearer_token(token, request)
@@ -432,7 +432,7 @@ class RequestValidatorTests(TestCase):
                 'token_type': 'Bearer',
                 'refresh_token': 'lmnopq',
             }
-            request.user = Session.query(User).filter(User.id==self.user_id).one()
+            request.user = Session.query(User).filter(User.id == self.user_id).one()
             request.scopes = ['read-passwords', 'write-passwords']
             request.client = rv.get_client(self.app_id)
             rv.save_bearer_token(token, request)

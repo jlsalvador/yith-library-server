@@ -249,7 +249,7 @@ class ViewTests(TestCase):
             },
         })
         password = Session.query(Password).filter(
-            Password.id==password_id
+            Password.id == password_id
         ).one()
         self.assertEqual(password.service, 'testing2')
         self.assertEqual(password.secret, 'sup3rs3cr3t')
@@ -295,7 +295,7 @@ class ViewTests(TestCase):
         self.assertEqual(count_after, 0)
         try:
             password = Session.query(Password).filter(
-                Password.id==password_id
+                Password.id == password_id
             ).one()
         except NoResultFound:
             password = None

@@ -45,8 +45,8 @@ def split_name(name):
 def user_from_provider_id(provider, external_id):
     try:
         identity = Session.query(ExternalIdentity).filter(
-            ExternalIdentity.provider==provider,
-            ExternalIdentity.external_id==external_id,
+            ExternalIdentity.provider == provider,
+            ExternalIdentity.external_id == external_id,
         ).one()
         return identity.user
     except NoResultFound:

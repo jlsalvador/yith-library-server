@@ -41,7 +41,7 @@ def merge_accounts(master_user, accounts):
             continue
 
         try:
-            current_user = Session.query(User).filter(User.id==user_id).one()
+            current_user = Session.query(User).filter(User.id == user_id).one()
         except NoResultFound:
             continue
 
@@ -56,18 +56,18 @@ def merge_users(user1, user2):
     values = {'user_id': user1.id}
     for Model in (Password, Application, AuthorizationCode, AccessCode,
                   ExternalIdentity):
-        Session.query(Model).filter(Model.user==user2).update(values, False)
+        Session.query(Model).filter(Model.user == user2).update(values, False)
 
     # Because the previous updates break the Unit of Work pattern we need
     # to refresh the current objects in the session
     Session.expire_all()
 
     for auth_app in Session.query(AuthorizedApplication).filter(
-            AuthorizedApplication.user==user2):
+            AuthorizedApplication.user == user2):
         try:
             Session.query(AuthorizedApplication).filter(
-                AuthorizedApplication.user==user1,
-                AuthorizedApplication.application==auth_app.application,
+                AuthorizedApplication.user == user1,
+                AuthorizedApplication.application == auth_app.application,
             ).one()
         except NoResultFound:
             auth_app.user = user1

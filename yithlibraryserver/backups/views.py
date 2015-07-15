@@ -70,7 +70,7 @@ def backups_import(request):
                 return response
 
             Session.query(Password).filter(
-                Password.user==request.user
+                Password.user == request.user
             ).delete(synchronize_session=False)
 
             for password_data in json_data:

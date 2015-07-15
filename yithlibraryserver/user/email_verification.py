@@ -44,8 +44,8 @@ class EmailVerificationCode(object):
             return Session.query(
                 User
             ).filter(
-                User.email==email,
-                User.email_verification_code==self.code
+                User.email == email,
+                User.email_verification_code == self.code
             ).one()
         except NoResultFound:
             return None

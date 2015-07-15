@@ -125,10 +125,10 @@ def statistics():
 
         # How many users are verified
         n_verified = Session.query(User).filter(
-            User.email_verified==True).count()
+            User.email_verified == True).count()
         # How many users allow the analytics cookie
         n_allow_cookie = Session.query(User).filter(
-            User.allow_google_analytics==True).count()
+            User.allow_google_analytics == True).count()
 
         # Identity providers
         by_identity = Session.query(
@@ -142,11 +142,11 @@ def statistics():
         domains_with_counts = select([
             func.substring(User.email, r'.*@(.*)').label('domain'),
             func.count('*').label('count'),
-        ]).where(User.email!='').group_by('domain').order_by(desc('count'))
+        ]).where(User.email != '').group_by('domain').order_by(desc('count'))
         aliased = domains_with_counts.alias()
-        by_email = Session.query(aliased).filter(aliased.c.count>1)
+        by_email = Session.query(aliased).filter(aliased.c.count > 1)
 
-        without_email = Session.query(User).filter(User.email=='').count()
+        without_email = Session.query(User).filter(User.email == '').count()
         with_email = n_users - without_email
 
         # Top ten users

@@ -32,10 +32,10 @@ if PY3:  # pragma: no cover
     binary_type = bytes
     long = int
 else:  # pragma: no cover
-    string_types = basestring,
+    string_types = basestring,  # noqa
     integer_types = (int, long)
     class_types = (type, types.ClassType)
-    text_type = unicode
+    text_type = unicode  # noqa
     binary_type = str
     long = long
 
@@ -44,15 +44,15 @@ if PY3:  # pragma: no cover
     from urllib.parse import quote as url_quote
     from urllib.parse import urlencode as url_encode
 else:  # pragma: no cover
-    import urlparse
-    from urllib import quote as url_quote
-    from urllib import urlencode as url_encode
+    import urlparse  # noqa
+    from urllib import quote as url_quote  # noqa
+    from urllib import urlencode as url_encode  # noqa
 
 if PY3:  # pragma: no cover
     from base64 import decodebytes, encodebytes
 else:  # pragma: no cover
-    from base64 import decodestring as decodebytes
-    from base64 import encodestring as encodebytes
+    from base64 import decodestring as decodebytes  # noqa
+    from base64 import encodestring as encodebytes  # noqa
 
 if PY3:  # pragma: no cover
     def encode_header(obj):  # pragma: no cover

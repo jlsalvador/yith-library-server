@@ -104,7 +104,7 @@ class User(BaseObject):
     def get_accounts(self, current_provider):
         other_users = Session.query(
             User
-        ).filter(User.email==self.email).filter(User.id!=self.id)
+        ).filter(User.email == self.email).filter(User.id != self.id)
 
         users = [self] + list(other_users)
         accounts = []

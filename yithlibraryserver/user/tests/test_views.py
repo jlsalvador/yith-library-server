@@ -150,15 +150,15 @@ class ViewTests(TestCase):
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/foo/bar')
         self.assertEqual(Session.query(User).count(), 1)
-        user = Session.query(User).filter(User.first_name=='John').one()
+        user = Session.query(User).filter(User.first_name == 'John').one()
         self.assertEqual(user.first_name, 'John')
         self.assertEqual(user.last_name, 'Doe')
         self.assertEqual(user.email, 'john@example.com')
         self.assertEqual(user.email_verified, True)
         self.assertEqual(user.send_passwords_periodically, False)
         identity = Session.query(ExternalIdentity).filter(
-            ExternalIdentity.external_id=='1234',
-            ExternalIdentity.provider=='facebook',
+            ExternalIdentity.external_id == '1234',
+            ExternalIdentity.provider == 'facebook',
         ).one()
         self.assertEqual(identity.user, user)
 
@@ -185,15 +185,15 @@ class ViewTests(TestCase):
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/foo/bar')
         self.assertEqual(Session.query(User).count(), 1)
-        user = Session.query(User).filter(User.first_name=='John2').one()
+        user = Session.query(User).filter(User.first_name == 'John2').one()
         self.assertEqual(user.first_name, 'John2')
         self.assertEqual(user.last_name, 'Doe2')
         self.assertEqual(user.email, '')
         self.assertEqual(user.email_verified, False)
         self.assertEqual(user.send_passwords_periodically, False)
         identity = Session.query(ExternalIdentity).filter(
-            ExternalIdentity.external_id=='1234',
-            ExternalIdentity.provider=='twitter',
+            ExternalIdentity.external_id == '1234',
+            ExternalIdentity.provider == 'twitter',
         ).one()
         self.assertEqual(identity.user, user)
 
@@ -222,15 +222,15 @@ class ViewTests(TestCase):
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/foo/bar')
         self.assertEqual(Session.query(User).count(), 1)
-        user = Session.query(User).filter(User.first_name=='John2').one()
+        user = Session.query(User).filter(User.first_name == 'John2').one()
         self.assertEqual(user.first_name, 'John2')
         self.assertEqual(user.last_name, 'Doe2')
         self.assertEqual(user.email, 'john@example.com')
         self.assertEqual(user.email_verified, False)
         self.assertEqual(user.send_passwords_periodically, False)
         identity = Session.query(ExternalIdentity).filter(
-            ExternalIdentity.external_id=='1234',
-            ExternalIdentity.provider=='google',
+            ExternalIdentity.external_id == '1234',
+            ExternalIdentity.provider == 'google',
         ).one()
         self.assertEqual(identity.user, user)
 
@@ -266,7 +266,7 @@ class ViewTests(TestCase):
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/foo/bar')
         self.assertEqual(Session.query(User).count(), 1)
-        user = Session.query(User).filter(User.first_name=='John3').one()
+        user = Session.query(User).filter(User.first_name == 'John3').one()
         self.assertFalse(user is None)
         self.assertEqual(user.first_name, 'John3')
         self.assertEqual(user.last_name, 'Doe3')
@@ -275,8 +275,8 @@ class ViewTests(TestCase):
         self.assertEqual(user.allow_google_analytics, True)
         self.assertEqual(user.send_passwords_periodically, False)
         identity = Session.query(ExternalIdentity).filter(
-            ExternalIdentity.external_id=='1234',
-            ExternalIdentity.provider=='google',
+            ExternalIdentity.external_id == '1234',
+            ExternalIdentity.provider == 'google',
         ).one()
         self.assertEqual(identity.user, user)
 
@@ -387,7 +387,7 @@ class ViewTests(TestCase):
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/profile')
         # check that the user has changed
-        new_user = Session.query(User).filter(User.id==user_id).one()
+        new_user = Session.query(User).filter(User.id == user_id).one()
 
         self.assertEqual(new_user.first_name, 'John')
         self.assertEqual(new_user.last_name, 'Doe')
@@ -443,8 +443,7 @@ class ViewTests(TestCase):
                                         email_verified=True)
         app = Application(name='Test Application',
                           callback_url='https://example.com/callback/',
-                          user_id=user_id
-        )
+                          user_id=user_id)
         with transaction.manager:
             Session.add(app)
             Session.flush()
@@ -462,8 +461,7 @@ class ViewTests(TestCase):
                                         email_verified=True)
         app = Application(name='Test Application',
                           callback_url='https://example.com/callback/',
-                          user_id=user_id
-        )
+                          user_id=user_id)
         with transaction.manager:
             Session.add(app)
             Session.flush()
@@ -490,13 +488,13 @@ class ViewTests(TestCase):
         self.assertClearAuthCookie(res.headers)
 
         try:
-            user = Session.query(User).filter(User.id==user_id).one()
+            user = Session.query(User).filter(User.id == user_id).one()
         except NoResultFound:
             user = None
         self.assertEqual(user, None)
 
         identities = Session.query(ExternalIdentity).filter(
-            ExternalIdentity.user_id==user_id
+            ExternalIdentity.user_id == user_id
         ).count()
         self.assertEqual(identities, 0)
 
@@ -577,7 +575,7 @@ class ViewTests(TestCase):
         self.assertEqual(res.status, '200 OK')
         res.mustcontain('Congratulations, your email has been successfully verified')
 
-        user = Session.query(User).filter(User.id==user_id).one()
+        user = Session.query(User).filter(User.id == user_id).one()
         self.assertEqual(user.email_verified, True)
         self.assertEqual(user.email_verification_code, '')
 
@@ -723,9 +721,9 @@ class IdentityProviderViewTests(TestCase):
         self.assertEqual(res.location, 'http://localhost/identity-providers')
         self.assertEqual(3, Session.query(User).count())
         self.assertEqual(1, Session.query(Password).filter(
-            Password.user_id==user1_id).count())
+            Password.user_id == user1_id).count())
         self.assertEqual(1, Session.query(Password).filter(
-            Password.user_id==user2_id).count())
+            Password.user_id == user2_id).count())
 
     def test_identity_providers_two_accounts_two_selected(self):
         user1_id = create_and_login_user(self.testapp,
@@ -809,26 +807,26 @@ class IdentityProviderViewTests(TestCase):
 
         # the accounts have been merged
         self.assertEqual(2, Session.query(User).count())
-        user1_refreshed = Session.query(User).filter(User.id==user1_id).one()
+        user1_refreshed = Session.query(User).filter(User.id == user1_id).one()
         google_identity = Session.query(ExternalIdentity).filter(
-            ExternalIdentity.user==user1_refreshed,
-            ExternalIdentity.provider=='google',
+            ExternalIdentity.user == user1_refreshed,
+            ExternalIdentity.provider == 'google',
         ).one()
         self.assertEqual(google_identity.external_id, 'google1')
         auths = Session.query(AuthorizedApplication).filter(
-            AuthorizedApplication.user==user1_refreshed,
+            AuthorizedApplication.user == user1_refreshed,
         )
         client_ids = [auth_app.application.id for auth_app in auths]
         self.assertEqual(set(client_ids), set([app1_id, app2_id, app3_id]))
 
         try:
-            user2_refreshed = Session.query(User).filter(User.id==user2_id).one()
+            user2_refreshed = Session.query(User).filter(User.id == user2_id).one()
         except NoResultFound:
             user2_refreshed = None
         self.assertEqual(user2_refreshed, None)
 
         self.assertEqual(2, Session.query(Password).filter(
-            Password.user_id==user1_id).count())
+            Password.user_id == user1_id).count())
 
     def test_google_analytics_preference_no_preference_parameter(self):
         res = self.testapp.post('/google-analytics-preference', status=400)
@@ -854,13 +852,13 @@ class IdentityProviderViewTests(TestCase):
         res = self.testapp.post('/google-analytics-preference', {'yes': 'Yes'})
         self.assertEqual(res.status, '200 OK')
         self.assertEqual(res.json, {'allow': True})
-        user_refreshed = Session.query(User).filter(User.id==user_id).one()
+        user_refreshed = Session.query(User).filter(User.id == user_id).one()
         self.assertEqual(user_refreshed.allow_google_analytics, True)
 
         res = self.testapp.post('/google-analytics-preference', {'no': 'No'})
         self.assertEqual(res.status, '200 OK')
         self.assertEqual(res.json, {'allow': False})
-        user_refreshed = Session.query(User).filter(User.id==user_id).one()
+        user_refreshed = Session.query(User).filter(User.id == user_id).one()
         self.assertEqual(user_refreshed.allow_google_analytics, False)
 
 
@@ -955,7 +953,7 @@ class PreferencesTests(TestCase):
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/preferences')
         # check that the user has changed
-        new_user = Session.query(User).filter(User.id==user_id).one()
+        new_user = Session.query(User).filter(User.id == user_id).one()
         self.assertEqual(new_user.allow_google_analytics, True)
         self.assertEqual(new_user.send_passwords_periodically, False)
 

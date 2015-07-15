@@ -128,7 +128,7 @@ class AuthorizationEndpointTests(TestCase):
         _, application_id, _ = create_client()
 
         count = Session.query(AuthorizedApplication).filter(
-            AuthorizedApplication.user_id==user_id,
+            AuthorizedApplication.user_id == user_id,
         ).count()
         self.assertEqual(count, 0)
 
@@ -156,7 +156,7 @@ class AuthorizationEndpointTests(TestCase):
 
         # Check that the app is authorized now
         query = Session.query(AuthorizedApplication).filter(
-            AuthorizedApplication.user_id==user_id,
+            AuthorizedApplication.user_id == user_id,
         )
 
         self.assertEqual(query.count(), 1)
@@ -170,8 +170,8 @@ class AuthorizationEndpointTests(TestCase):
 
         # Check the right redirect url
         grant = Session.query(AuthorizationCode).filter(
-            AuthorizationCode.application_id==application_id,
-            AuthorizationCode.user_id==user_id,
+            AuthorizationCode.application_id == application_id,
+            AuthorizationCode.user_id == user_id,
         ).one()
         self.assertEqual(grant.application.id, application_id)
         location = 'https://example.com/callback?code=%s' % grant.code
@@ -183,7 +183,7 @@ class AuthorizationEndpointTests(TestCase):
         _, application_id, _ = create_client()
 
         count = Session.query(AuthorizedApplication).filter(
-            AuthorizedApplication.user_id==user_id,
+            AuthorizedApplication.user_id == user_id,
         ).count()
         self.assertEqual(count, 0)
 
@@ -205,7 +205,7 @@ class AuthorizationEndpointTests(TestCase):
         self.assertEqual(res.status, '302 Found')
 
         count = Session.query(AuthorizedApplication).filter(
-            AuthorizedApplication.user_id==user_id,
+            AuthorizedApplication.user_id == user_id,
         ).count()
         self.assertEqual(count, 1)
 
@@ -218,13 +218,13 @@ class AuthorizationEndpointTests(TestCase):
         self.assertEqual(res.status, '302 Found')
 
         count = Session.query(AuthorizedApplication).filter(
-            AuthorizedApplication.user_id==user_id,
+            AuthorizedApplication.user_id == user_id,
         ).count()
         self.assertEqual(count, 1)
 
         grants = Session.query(AuthorizationCode).filter(
-            AuthorizationCode.application_id==application_id,
-            AuthorizationCode.user_id==user_id,
+            AuthorizationCode.application_id == application_id,
+            AuthorizationCode.user_id == user_id,
         )
 
         # There are two grants now
@@ -383,8 +383,8 @@ class TokenEndpointTests(TestCase):
         })
         self.assertEqual(res.status, '302 Found')
         grant = Session.query(AuthorizationCode).filter(
-            AuthorizationCode.application_id==application_id,
-            AuthorizationCode.user_id==user_id,
+            AuthorizationCode.application_id == application_id,
+            AuthorizationCode.user_id == user_id,
         ).one()
         code = grant.code
 
@@ -404,8 +404,8 @@ class TokenEndpointTests(TestCase):
         # the grant code should be removed
         try:
             grant = Session.query(AuthorizationCode).filter(
-                AuthorizationCode.application_id==application_id,
-                AuthorizationCode.user_id==user_id,
+                AuthorizationCode.application_id == application_id,
+                AuthorizationCode.user_id == user_id,
             ).one()
         except NoResultFound:
             grant = None
@@ -416,7 +416,7 @@ class TokenEndpointTests(TestCase):
         self.assertEqual(res.json['expires_in'], 3600)
 
         access_code = Session.query(AccessCode).filter(
-            AccessCode.code==res.json['access_token'],
+            AccessCode.code == res.json['access_token'],
         ).one()
         self.assertNotEqual(access_code, None)
 
@@ -499,11 +499,11 @@ https://example.com''',
         self.assertEqual(res.location, 'http://localhost/oauth2/applications')
 
         app = Session.query(Application).filter(
-            Application.name=='Test Application',
-            Application.main_url=='http://example.com',
-            Application.callback_url=='http://example.com/callback',
-            Application.authorized_origins==['http://example.com',
-                                             'https://example.com']
+            Application.name == 'Test Application',
+            Application.main_url == 'http://example.com',
+            Application.callback_url == 'http://example.com/callback',
+            Application.authorized_origins == ['http://example.com',
+                                               'https://example.com']
         ).one()
         self.assertNotEqual(app.id, '')
         self.assertNotEqual(app.secret, '')
@@ -625,7 +625,7 @@ https://example.com''',
         self.assertEqual(res.location, 'http://localhost/oauth2/applications')
 
         try:
-            app = Session.query(Application).filter(Application.id==app_id).one()
+            app = Session.query(Application).filter(Application.id == app_id).one()
         except NoResultFound:
             app = None
 
@@ -635,7 +635,6 @@ https://example.com''',
         self.assertEqual(Session.query(Application).count(), 0)
         # Related authorizations should be deleted on cascade
         self.assertEqual(Session.query(AuthorizedApplication).count(), 0)
-
 
     def test_application_edit_requires_authentication(self):
         res = self.testapp.get('/oauth2/applications/xxx/edit')
@@ -683,7 +682,6 @@ https://example.com''',
             Session.add(other_user)
             Session.flush()
             app_id = app.id
-
 
         res = self.testapp.get('/oauth2/applications/%s/edit' % str(app_id),
                                status=401)
@@ -755,7 +753,7 @@ https://example.com""")
         })
         self.assertEqual(res.status, '302 Found')
         self.assertEqual(res.location, 'http://localhost/oauth2/applications')
-        new_app = Session.query(Application).filter(Application.id==app_id).one()
+        new_app = Session.query(Application).filter(Application.id == app_id).one()
         self.assertEqual(new_app.name, 'Test Application 2')
         self.assertEqual(new_app.main_url, 'http://example.com/new')
         self.assertEqual(new_app.callback_url, 'http://example.com/new/callback')
@@ -956,9 +954,9 @@ https://example.com""")
                     email='john@example.com')
 
         app = Application(name='Test Application',
-                           main_url='http://example.com',
-                           callback_url='http://example.com/callback',
-                           user=administrator)
+                          main_url='http://example.com',
+                          callback_url='http://example.com/callback',
+                          user=administrator)
 
         auth_app = AuthorizedApplication(
             scope=['read-passwords'],
@@ -992,8 +990,8 @@ https://example.com""")
         self.assertEqual(res.location, 'http://localhost/oauth2/authorized-applications')
         try:
             auth_app = Session.query(AuthorizedApplication).filter(
-                AuthorizedApplication.application_id==app_id,
-                AuthorizedApplication.user_id==user_id,
+                AuthorizedApplication.application_id == app_id,
+                AuthorizedApplication.user_id == user_id,
             ).one()
         except NoResultFound:
             auth_app = None

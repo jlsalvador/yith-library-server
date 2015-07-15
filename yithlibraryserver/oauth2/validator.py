@@ -61,7 +61,7 @@ class RequestValidator(oauthlib.oauth2.RequestValidator):
         else:
             try:
                 client = Session.query(Application).filter(
-                    Application.id==client_id
+                    Application.id == client_id
                 ).one()
             except NoResultFound:
                 client = None
@@ -188,8 +188,8 @@ class RequestValidator(oauthlib.oauth2.RequestValidator):
         """
         try:
             record = Session.query(AuthorizationCode).filter(
-                AuthorizationCode.code==code,
-                AuthorizationCode.application==request.client,
+                AuthorizationCode.code == code,
+                AuthorizationCode.application == request.client,
             ).one()
         except NoResultFound:
             record = None
@@ -211,8 +211,8 @@ class RequestValidator(oauthlib.oauth2.RequestValidator):
 
         try:
             authorization_code = Session.query(AuthorizationCode).filter(
-                AuthorizationCode.code==code,
-                AuthorizationCode.application==client,
+                AuthorizationCode.code == code,
+                AuthorizationCode.application == client,
             ).one()
         except NoResultFound:
             authorization_code = None
@@ -255,8 +255,8 @@ class RequestValidator(oauthlib.oauth2.RequestValidator):
         has been acquired.
         """
         authorization_code = Session.query(AuthorizationCode).filter(
-            AuthorizationCode.code==code,
-            AuthorizationCode.application==request.client,
+            AuthorizationCode.code == code,
+            AuthorizationCode.application == request.client,
         ).one()
         Session.delete(authorization_code)
 
@@ -269,7 +269,7 @@ class RequestValidator(oauthlib.oauth2.RequestValidator):
 
         try:
             access_code = Session.query(AccessCode).filter(
-                AccessCode.code==token,
+                AccessCode.code == token,
             ).one()
         except NoResultFound:
             access_code = None

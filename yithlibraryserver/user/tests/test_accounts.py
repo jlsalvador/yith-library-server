@@ -105,13 +105,13 @@ class MergeUsersTests(BaseMergeTests):
         with transaction.manager:
             user1 = User(email='john@example.com')
             identity1 = ExternalIdentity(provider='twitter', external_id='1234',
-                                     user=user1)
+                                         user=user1)
             password1 = Password(secret='s3cr3t1', user=user1)
             password2 = Password(secret='s3cr3t2', user=user1)
 
             user2 = User(email='john@example.com')
             identity2 = ExternalIdentity(provider='google', external_id='4321',
-                                     user=user2)
+                                         user=user2)
             password3 = Password(secret='s3cr3t3', user=user2)
             password4 = Password(secret='s3cr3t4', user=user2)
 
@@ -127,8 +127,8 @@ class MergeUsersTests(BaseMergeTests):
             user1_id = user1.id
             user2_id = user2.id
 
-        user1 = Session.query(User).filter(User.id==user1_id).one()
-        user2 = Session.query(User).filter(User.id==user2_id).one()
+        user1 = Session.query(User).filter(User.id == user1_id).one()
+        user2 = Session.query(User).filter(User.id == user2_id).one()
         self.assertEqual(1, len(user1.identities))
         self.assertEqual(4, Session.query(Password).count())
 
@@ -137,14 +137,14 @@ class MergeUsersTests(BaseMergeTests):
 
         self.assertEqual(4, Session.query(Password).count())
         self.assertEqual(0, Session.query(Password).filter(
-            Password.user_id==user2_id).count())
+            Password.user_id == user2_id).count())
         try:
-            user2_refreshed = Session.query(User).filter(User.id==user2_id).one()
+            user2_refreshed = Session.query(User).filter(User.id == user2_id).one()
         except NoResultFound:
             user2_refreshed = None
         self.assertEqual(user2_refreshed, None)
 
-        user1 = Session.query(User).filter(User.id==user1_id).one()
+        user1 = Session.query(User).filter(User.id == user1_id).one()
         self.assertEqual(2, len(user1.identities))
 
 

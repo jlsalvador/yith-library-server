@@ -42,7 +42,6 @@ class Application(BaseObject):
     callback_url = Column(String, nullable=False, default='')
     authorized_origins = Column(ARRAY(Text, dimensions=1), nullable=True)
 
-
     image_url = Column(String, nullable=False, default='')
     description = Column(Text, nullable=False, default='')
 
