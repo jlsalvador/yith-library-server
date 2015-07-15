@@ -1,0 +1,3 @@
+#!/bin/bash
+
+yith_clean_access_codes $OPENSHIFT_REPO_DIR/yithlibraryserver/config-templates/production.ini
