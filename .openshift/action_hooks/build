@@ -1,0 +1,3 @@
+#!/bin/bash
+
+find $OPENSHIFT_REPO_DIR/yithlibraryserver/locale/ -name "*.po" -exec sh -c 'msgfmt {} -o $(dirname {})/$(basename {} .po).mo' \;

@@ -22,5 +22,8 @@ pip-log.txt
 #Mr Developer
 .mr.developer.cfg
 
+# Compiled message catalogs
+*.mo
+
 # local configuration we don't want in the repo
 twitter-local.ini
