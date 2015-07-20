@@ -1,3 +1,15 @@
 #!/bin/bash
 
+# Compile translation catalogs
 find $OPENSHIFT_REPO_DIR/yithlibraryserver/locale/ -name "*.po" -exec sh -c 'msgfmt {} -o $(dirname {})/$(basename {} .po).mo' \;
+
+# Build static assets
+cd $OPENSHIFT_TMP_DIR
+npm install clean-css --cache $OPENSHIFT_TMP_DIR/npm-cache
+
+export PATH=$PATH:$OPENSHIFT_TMP_DIR/node_modules/.bin/
+
+yith_build_assets $OPENSHIFT_REPO_DIR/yithlibraryserver/config-templates/production.ini
+
+# Clean things
+rm -rf $OPENSHIFT_TMP_DIR/node_modules $OPENSHIFT_TMP_DIR/npm-cache
