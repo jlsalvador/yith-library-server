@@ -5,7 +5,7 @@ find $OPENSHIFT_REPO_DIR/yithlibraryserver/locale/ -name "*.po" -exec sh -c 'msg
 
 # Build static assets
 cd $OPENSHIFT_TMP_DIR
-npm install clean-css --cache $OPENSHIFT_TMP_DIR/npm-cache
+npm install clean-css@3.3.6 --cache $OPENSHIFT_TMP_DIR/npm-cache
 
 export PATH=$PATH:$OPENSHIFT_TMP_DIR/node_modules/.bin/
 
