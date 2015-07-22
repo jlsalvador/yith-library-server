@@ -98,6 +98,8 @@ class TestCase(unittest.TestCase):
         settings = {
             'database_url': self.db_uri,
             'auth_tk_secret': '123456',
+            'redis.sessions.secret': '123456',
+            'redis.sessions.url': 'redis://127.0.0.1:6379/0',
             'twitter_consumer_key': 'key',
             'twitter_consumer_secret': 'secret',
             'facebook_app_id': 'id',

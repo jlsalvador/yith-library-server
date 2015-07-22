@@ -43,22 +43,71 @@ class ConfigTests(unittest.TestCase):
 
         os.environ['FOO_BAR'] = '2'
         self.assertEqual('2', read_setting_from_env(settings, 'foo_bar'))
+        del os.environ['FOO_BAR']
 
     def test_required_settings(self):
         settings = {}
-        self.assertRaises(ConfigurationError, main, {}, **settings)
+        with self.assertRaises(ConfigurationError) as context:
+            main({}, **settings)
+            self.assertEqual(
+                context.message,
+                'The auth_tk_secret configuration option is required'
+            )
 
         settings = {
             'auth_tk_secret': '1234',
         }
-        self.assertRaises(ConfigurationError, main, {}, **settings)
+        with self.assertRaises(ConfigurationError) as context:
+            main({}, **settings)
+            self.assertEqual(
+                context.message,
+                'The database_url configuration option is required'
+            )
 
         settings = {
             'auth_tk_secret': '1234',
             'database_url': 'postgresql://foo:bar@localhost:5432/test',
+        }
+        with self.assertRaises(ConfigurationError) as context:
+            main({}, **settings)
+            self.assertEqual(
+                context.message,
+                'The redis.sessions.secret configuration option is required'
+            )
+
+        settings = {
+            'auth_tk_secret': '1234',
+            'database_url': 'postgresql://foo:bar@localhost:5432/test',
+            'redis.sessions.secret': '1234',
+        }
+        with self.assertRaises(ConfigurationError) as context:
+            main({}, **settings)
+            self.assertEqual(
+                context.message,
+                'The redis.sessions.url configuration option is required'
+            )
+
+        settings = {
+            'auth_tk_secret': '1234',
+            'database_url': 'postgresql://foo:bar@localhost:5432/test',
+            'redis.sessions.secret': '1234',
+            'redis.sessions.url': 'redis://127.0.0.1:6379/0',
         }
         app = main({}, **settings)
         self.assertEqual(settings['auth_tk_secret'],
                          app.registry.settings['auth_tk_secret'])
         self.assertEqual(settings['database_url'],
                          app.registry.settings['database_url'])
+        self.assertEqual(settings['redis.sessions.secret'],
+                         app.registry.settings['redis.sessions.secret'])
+        self.assertEqual(settings['redis.sessions.url'],
+                         app.registry.settings['redis.sessions.url'])
+
+    def test_setting_with_dots(self):
+        settings = {
+            'foo.bar': '1'
+        }
+        self.assertEqual('1', read_setting_from_env(settings, 'foo.bar'))
+        os.environ['FOO_BAR'] = '2'
+        self.assertEqual('2', read_setting_from_env(settings, 'foo.bar'))
+        del os.environ['FOO_BAR']

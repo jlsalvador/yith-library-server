@@ -38,6 +38,7 @@ from pyramid.authentication import AuthTktAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
 from pyramid.exceptions import ConfigurationError
 from pyramid.path import AssetResolver
+from pyramid.session import SignedCookieSessionFactory
 from pyramid.settings import asbool
 
 from yithlibraryserver.config import read_setting_from_env
@@ -75,6 +76,13 @@ def main(global_config, **settings):
         raise ConfigurationError('The auth_tk_secret configuration '
                                  'option is required')
 
+    # SQLAlchemy setup
+    settings['database_url'] = read_setting_from_env(settings, 'database_url', None)
+    if settings['database_url'] is None:
+        raise ConfigurationError('The database_url configuration '
+                                 'option is required')
+    settings['sqlalchemy.url'] = settings['database_url']
+
     # read sessions settings
     settings['redis.sessions.secret'] = read_setting_from_env(
         settings, 'redis.sessions.secret', None)
@@ -87,13 +95,6 @@ def main(global_config, **settings):
     if settings['redis.sessions.url'] is None:
         raise ConfigurationError('The redis.sessions.url configuration '
                                  'option is required')
-
-    # SQLAlchemy setup
-    settings['database_url'] = read_setting_from_env(settings, 'database_url', None)
-    if settings['database_url'] is None:
-        raise ConfigurationError('The database_url configuration '
-                                 'option is required')
-    settings['sqlalchemy.url'] = settings['database_url']
 
     # Available languages
     available_languages = read_setting_from_env(settings, 'available_languages', 'en es')
@@ -145,9 +146,6 @@ def main(global_config, **settings):
     # Chameleon setup
     config.include('pyramid_chameleon')
 
-    # Sessions setup
-    config.include('pyramid_redis_sessions')
-
     # Webassets
     config.include('pyramid_webassets')
 
@@ -158,6 +156,7 @@ def main(global_config, **settings):
     # Setup of stuff used only in the tests
     if 'testing' in settings and asbool(settings['testing']):
         config.include('pyramid_mailer.testing')
+        config.set_session_factory(SignedCookieSessionFactory('testing'))
 
         # add test only views to make it easy to login and add
         # things to the session during the tests
@@ -173,6 +172,8 @@ def main(global_config, **settings):
 
     else:  # pragma: no cover
         config.include('pyramid_mailer')
+
+        config.include('pyramid_redis_sessions')
 
     # Google/Facebook authentication
     config.include('pyramid_sna')
