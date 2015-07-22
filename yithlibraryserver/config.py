@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 
 
 def read_setting_from_env(settings, key, default=None):
-    env_variable = key.upper()
+    env_variable = key.upper().replace('.', '_')
     if env_variable in os.environ:
         log.debug('Setting %s found in the environment: %s' %
                   (key, os.environ[env_variable]))

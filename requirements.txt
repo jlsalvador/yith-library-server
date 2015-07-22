@@ -1,7 +1,6 @@
 # base #
 
 # indirect dependencies
-Beaker==1.6.4            # required by pyramid_beaker
 colander==1.0b1          # required by deform
 Chameleon==2.18          # required by deform, pyramid_chameleon, lingua
 PasteDeploy==1.5.2       # required by pyramid
@@ -11,6 +10,7 @@ peppercorn==0.5          # required by deform
 polib==1.0.6             # required by lingua
 pyflakes==0.8.1		 # required by flake8
 pytz==2014.9             # required by Babel
+redis==2.10.3            # required by pyramid_redis_sessions
 repoze.lru==0.6          # required by pyramid
 repoze.sendmail==4.1     # required by pyramid_mailer
 transaction==1.4.3       # required by pyramid_mailer
@@ -30,9 +30,9 @@ lingua==3.9
 oauthlib==0.7.2
 psycopg2==2.6
 pyramid==1.5.4
-pyramid_beaker==0.8
 pyramid_chameleon==0.3
 pyramid_mailer==0.13
+pyramid_redis_sessions==1.0.1
 pyramid_tm==0.7
 pyramid_sna==0.3.1
 pyramid_sqlalchemy==1.2.2

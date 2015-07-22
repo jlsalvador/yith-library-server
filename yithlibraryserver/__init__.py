@@ -75,6 +75,19 @@ def main(global_config, **settings):
         raise ConfigurationError('The auth_tk_secret configuration '
                                  'option is required')
 
+    # read sessions settings
+    settings['redis.sessions.secret'] = read_setting_from_env(
+        settings, 'redis.sessions.secret', None)
+    if settings['redis.sessions.secret'] is None:
+        raise ConfigurationError('The redis.sessions.secret configuration '
+                                 'option is required')
+
+    settings['redis.sessions.url'] = read_setting_from_env(
+        settings, 'redis.sessions.url', None)
+    if settings['redis.sessions.url'] is None:
+        raise ConfigurationError('The redis.sessions.url configuration '
+                                 'option is required')
+
     # SQLAlchemy setup
     settings['database_url'] = read_setting_from_env(settings, 'database_url', None)
     if settings['database_url'] is None:
@@ -132,8 +145,8 @@ def main(global_config, **settings):
     # Chameleon setup
     config.include('pyramid_chameleon')
 
-    # Beaker (sessions) setup
-    config.include('pyramid_beaker')
+    # Sessions setup
+    config.include('pyramid_redis_sessions')
 
     # Webassets
     config.include('pyramid_webassets')
