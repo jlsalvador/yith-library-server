@@ -122,12 +122,6 @@ def main(global_config, **settings):
     manifest_path = ('static', 'build', 'manifest.json')
     settings['webassets.manifest'] = 'json:%s' % os.path.join(here, *manifest_path)
 
-    # sessions
-    settings['session.data_dir'] = read_setting_from_env(
-        settings, 'session_data_dir', settings.get('session.data_dir'))
-    settings['session.lock_dir'] = read_setting_from_env(
-        settings, 'session_lock_dir', settings.get('session.lock_dir'))
-
     # main config object
     config = Configurator(
         settings=settings,
