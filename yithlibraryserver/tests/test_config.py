@@ -47,45 +47,32 @@ class ConfigTests(unittest.TestCase):
 
     def test_required_settings(self):
         settings = {}
-        with self.assertRaises(ConfigurationError) as context:
-            main({}, **settings)
-            self.assertEqual(
-                context.message,
-                'The auth_tk_secret configuration option is required'
-            )
+        # Unfortunately Python 2.6 does not support self.assertRaises
+        # as a context manager to inspect the msg of the exception
+
+        # The auth_tk_secret configuration option is required
+        self.assertRaises(ConfigurationError, main, {}, **settings)
 
         settings = {
             'auth_tk_secret': '1234',
         }
-        with self.assertRaises(ConfigurationError) as context:
-            main({}, **settings)
-            self.assertEqual(
-                context.message,
-                'The database_url configuration option is required'
-            )
+        # The database_url configuration option is required
+        self.assertRaises(ConfigurationError, main, {}, **settings)
 
         settings = {
             'auth_tk_secret': '1234',
             'database_url': 'postgresql://foo:bar@localhost:5432/test',
         }
-        with self.assertRaises(ConfigurationError) as context:
-            main({}, **settings)
-            self.assertEqual(
-                context.message,
-                'The redis.sessions.secret configuration option is required'
-            )
+        # The redis.sessions.secret configuration option is required
+        self.assertRaises(ConfigurationError, main, {}, **settings)
 
         settings = {
             'auth_tk_secret': '1234',
             'database_url': 'postgresql://foo:bar@localhost:5432/test',
             'redis.sessions.secret': '1234',
         }
-        with self.assertRaises(ConfigurationError) as context:
-            main({}, **settings)
-            self.assertEqual(
-                context.message,
-                'The redis.sessions.url configuration option is required'
-            )
+        # The redis.sessions.url configuration option is required
+        self.assertRaises(ConfigurationError, main, {}, **settings)
 
         settings = {
             'auth_tk_secret': '1234',
