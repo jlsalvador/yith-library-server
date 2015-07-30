@@ -479,6 +479,38 @@ class ViewTests(TestCase):
     def test_destroy_success(self):
         user_id = create_and_login_user(self.testapp)
 
+        # this user has a password, an authorized app and an access code
+        password = Password(secret='s3cr3t',
+                            user_id=user_id)
+
+        admin = User(screen_name='Alice doe',
+                     first_name='Alice',
+                     last_name='Doe',
+                     email='alice@example.com')
+        app = Application(name='Test Application',
+                          callback_url='https://example.com/callback')
+        admin.applications.append(app)
+        auth_app = AuthorizedApplication(
+            scope=['scope1'],
+            response_type='code',
+            redirect_uri='http://example.com/callback',
+            application=app,
+            user_id=user_id,
+        )
+        access_code = AccessCode(code='1234',
+                                 code_type='Bearer',
+                                 expiration=datetime.datetime(2014, 2, 23, 9, 0),
+                                 scope=['read-userinfo'],
+                                 user_id=user_id,
+                                 application=app)
+
+        with transaction.manager:
+            Session.add(password)
+            Session.add(admin)
+            Session.add(app)
+            Session.add(auth_app)
+            Session.add(access_code)
+
         res = self.testapp.post('/destroy', {
             'reason': 'I do not need a password manager',
             'submit': 'Yes, I am sure. Destroy my account',
@@ -497,6 +529,21 @@ class ViewTests(TestCase):
             ExternalIdentity.user_id == user_id
         ).count()
         self.assertEqual(identities, 0)
+
+        authorized_apps = Session.query(AuthorizedApplication).filter(
+            AuthorizedApplication.user_id == user_id
+        ).count()
+        self.assertEqual(authorized_apps, 0)
+
+        access_codes = Session.query(AccessCode).filter(
+            AccessCode.user_id == user_id
+        ).count()
+        self.assertEqual(access_codes, 0)
+
+        passwords = Session.query(Password).filter(
+            Password.user_id == user_id
+        ).count()
+        self.assertEqual(passwords, 0)
 
         res.request.registry = self.testapp.app.registry
         mailer = get_mailer(res.request)

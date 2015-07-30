@@ -113,7 +113,8 @@ class AuthorizationCode(BaseObject):
     )
     user = relationship(
         'User',
-        backref=backref('authorization_codes'),
+        backref=backref('authorization_codes',
+                        cascade='all, delete-orphan'),
     )
 
 
@@ -147,5 +148,6 @@ class AccessCode(BaseObject):
     )
     user = relationship(
         'User',
-        backref=backref('access_codes'),
+        backref=backref('access_codes',
+                        cascade='all, delete-orphan'),
     )
