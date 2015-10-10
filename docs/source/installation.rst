@@ -12,7 +12,7 @@ run :program:`Yith Library Server`.
 .. sidebar:: Python Versions
 
     As of this writing, :program:`Yith Library Server` has been tested
-    under Python 2.6, Python 2.7, Python 3.2, and Python 3.3.
+    under Python 2.6, Python 2.7, Python 3.3 and Python 3.4.
     :program:`Yith Library Server` does not run under any version
     of Python before 2.6.
 
