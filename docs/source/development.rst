@@ -41,6 +41,33 @@ To activate the Virtual Python Environment, execute this command:
    $ source bin/activate
    $ cd yith-library-server
 
+Setting up the test database
+----------------------------
+
+:program:`Yith Library Server` needs a `test_yithlibrary` database for
+the tests to run. The PostgreSQL database server should have been
+set up as per :ref:`installation_chapter`. You can then
+create the test database with this commands:
+
+.. code-block:: text
+
+   $ sudo su - postgres
+   $ createdb -E UTF8 -O postgres test_yithlibrary
+
+Then add this line to the top of your PostgreSQL installation
+*pg_hba.conf* file:
+
+.. code-block:: text
+
+   local   test_yithlibrary   postgres   trust
+
+This will allow the `postgres` user to connect to the
+`test_yithlibrary` database without a password as long as the
+connection is local, which should be the case for the tests.
+
+You will need to restart the PostgreSQL server for this configuration
+change to take effect.
+
 Running the tests
 -----------------
 

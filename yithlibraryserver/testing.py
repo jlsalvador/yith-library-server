@@ -83,7 +83,7 @@ def sqlalchemy_teardown(context):
 
 
 def get_test_db_uri():
-    return 'postgresql://postgres@localhost:5432/test_yithlibrary'
+    return 'postgresql://postgres@/test_yithlibrary'
 
 
 class TestCase(unittest.TestCase):
