@@ -21,7 +21,7 @@ systems such as Linux, MacOS X, and FreeBSD.  It is also known to run on
 :term:`PyPy` (1.9+).
 
 :program:`Yith Library Server` installation requires the compilation
-of some C code, because of some dependencies (:term:`PyMongo`) so you
+of some C code, because of some dependencies (:term:`libpq-dev`) so you
 will need a Python interpreter that meets the requirements mentioned,
 a C compiler and the matching Python development headers for your
 interpreter version.
@@ -375,27 +375,68 @@ complete, as it downloads and installs a number of dependencies.
 Database setup
 --------------
 
-:program:`Yith Library Server` uses `MongoDB <http://www.mongodb.org>`_ for
-its storage needs. In modern operating systems it is pretty easy to install
-MongoDB. As an example, on an Ubuntu Linux system you can use the following
+:program:`Yith Library Server` uses `PostgreSQL
+<http://www.postgresql.org>`_ for its storage needs. In modern
+operating systems it is pretty easy to install Postgres. As an
+example, on a Debian or Ubuntu Linux system you can use the following
 commands
 
 .. code-block:: text
 
-   $ sudo apt-get install mongodb mongodb-server
-   $ sudo service mongodb start
+   $ sudo apt-get install postgresql postgresql-contrib
 
 Or, in a Fedora Linux system, the equivalent commands are:
 
 .. code-block:: text
 
-   $ sudo yum install mongodb mongodb-server
-   $ sudo systemctl start mongod.service
+   $ sudo yum install postgresql-server postgresql-contrib
+   $ sudo systemctl enable postgresql
 
-By default :program:`Yith Library Server` will look for a MongoDB server in
-``localhost``, listening on port ``27017`` and will use a database
-named ``yith-library``. Of couse you can change these settings as explained
-in the :ref:`configuration_chapter` section.
+Once PostgreSQL is installed you will need to configure it. By default
+:program:`Yith Library Server` will connect to a ``yithlibrary``
+database in ``localhost`` on port ``5432`` (PostgreSQL's default).
+
+You will need to create a ``yithlibrary`` user in PostgreSQL, create
+the ``yithlibrary`` database and install the UUID extension. Managing
+and configuring a PostgreSQL server goes beyond the scope of this
+document, but you can execute these commands to create the user and
+database:
+
+.. code-block:: text
+
+   $ sudo su - postgres
+   $ createuser -P yithlibrary
+   <input user password that you want to use, keep it secret!>
+   $ createdb -E UTF8 -O yithlibrary yithlibrary
+   $ psql yithlibrary -c 'CREATE EXTENSION "uuid-ossp";'
+
+If ``createdb`` complains about the UTF8 encoding it might be
+because your PostgreSQL cluster is using a different incompatible
+locale (frequently SQL_ASCII). If your server is a fresh install it
+would be advisable to `recreate the cluster with a proper locale
+<https://wiki.debian.org/PostgreSql#Changing_Debian_default_installation>`_.
+
+Once the user and database are created put the password for the
+``yithlibrary`` user in the ``database_url`` setting as explained in
+the :ref:`configuration_chapter` section.
+
+:program:`Yith Library Server` makes use of prepared transactions, so
+make sure they are enabled in your PostgreSQL configuration
+(max_prepared_transactions = 100 in postgresql.conf).
+
+The last step is to create the tables that :program:`Yith Library
+Server` needs in the database. To do this just execute this command
+inside the `env` virtualenv (you need to pass a configuration file):
+
+.. code-block:: text
+
+   $ bin/yith_create_db lib/python2.7/site-packages/yithlibraryserver/config-templates/production.ini
+
+Useful links:
+
+* PostgreSQL on Debian: https://wiki.debian.org/PostgreSql
+* PostgreSQL on Fedora: https://fedoraproject.org/wiki/PostgreSQL
+* PostgreSQL documentation: http://www.postgresql.org/docs/current/
 
 Running the server
 ------------------
