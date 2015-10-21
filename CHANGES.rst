@@ -1,3 +1,10 @@
+unreleased
+----------
+
+- Bug fixes:
+
+  - Make background images from CSS rules work (Lorenzo Gil)
+
 0.3 (2015-07-07)
 ----------------
 - New features:
