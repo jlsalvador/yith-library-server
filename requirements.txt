@@ -17,7 +17,7 @@ transaction==1.4.3       # required by pyramid_mailer
 translationstring==1.1   # required by deform, pyramid
 venusian==1.0            # required by pyramid
 SQLAlchemy==1.0.4        # required by pyramid_sqlalchemy
-webassets==0.10.1        # required by pyramid_webassets
+webassets==0.11.1        # required by pyramid_webassets
 WebOb==1.4               # required by pyramid
 zope.deprecation==4.1.1  # required by deform
 zope.interface==4.1.1    # required by pyramid
