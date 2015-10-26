@@ -23,7 +23,7 @@ unreleased
   - Add Microsoft Live Connect as a new IdP (Lorenzo Gil)
   - Add a Contributions page with donations support via PayPal (Lorenzo Gil)
 
-- Buf fixes:
+- Bug fixes:
 
   - Lots of fixed contributed by Lorenzo Gil, Sergio Rus and Alejandro Blanco
 
