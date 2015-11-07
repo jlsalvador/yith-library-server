@@ -24,9 +24,13 @@ from yithlibraryserver.jsonrenderer import datetime_adapter, datetime_parser
 
 class DatetimeParserTests(unittest.TestCase):
 
-    def test_parse_date(self):
+    def test_parse_date_with_no_milliseconds(self):
         self.assertEqual(datetime_parser('2015-04-30T22:10:30'),
                          datetime.datetime(2015, 4, 30, 22, 10, 30))
+
+    def test_parse_date_with_milliseconds(self):
+        self.assertEqual(datetime_parser('2015-04-30T22:10:30.123000'),
+                         datetime.datetime(2015, 4, 30, 22, 10, 30, 123000))
 
 
 class DatetimeAdapterTests(unittest.TestCase):

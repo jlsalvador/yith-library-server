@@ -29,4 +29,8 @@ json_renderer.add_adapter(datetime.datetime, datetime_adapter)
 
 
 def datetime_parser(datestring):
-    return datetime.datetime.strptime(datestring, "%Y-%m-%dT%H:%M:%S")
+    if '.' in datestring:
+        dateformat = "%Y-%m-%dT%H:%M:%S.%f"
+    else:
+        dateformat = "%Y-%m-%dT%H:%M:%S"
+    return datetime.datetime.strptime(datestring, dateformat)

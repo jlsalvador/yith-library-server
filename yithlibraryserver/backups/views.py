@@ -62,7 +62,8 @@ def backups_import(request):
         passwords_field = request.POST['passwords-file']
         if passwords_field != '':
             try:
-                json_data = uncompress(passwords_field.file.read())
+                compressed_data = passwords_field.file.read()
+                json_data = uncompress(compressed_data)
             except (IOError, ValueError):
                 request.session.flash(
                     _('There was a problem reading your passwords file'),
