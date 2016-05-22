@@ -19,14 +19,13 @@
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
 from freezegun import freeze_time
-import mock
-from mock import patch
 
 from pyramid_sqlalchemy import Session
 
 import transaction
 
 from yithlibraryserver import testing
+from yithlibraryserver.compat import mock
 from yithlibraryserver.user.models import ExternalIdentity, User
 
 
@@ -43,7 +42,7 @@ class ViewTests(testing.TestCase):
         settings['twitter_access_token_url'] = 'https://api.twitter.com/oauth/access_token'
 
     def test_twitter_login(self):
-        with patch('requests.post') as fake:
+        with mock.patch('requests.post') as fake:
             response = fake.return_value
             response.status_code = 200
             response.text = 'oauth_callback_confirmed=true&oauth_token=123456789'
@@ -53,14 +52,14 @@ class ViewTests(testing.TestCase):
             self.assertEqual(res.location, loc)
 
         # simulate an authentication error from Twitter
-        with patch('requests.post') as fake:
+        with mock.patch('requests.post') as fake:
             response = fake.return_value
             response.status_code = 401
             res = self.testapp.get('/twitter/login', status=401)
             self.assertEqual(res.status, '401 Unauthorized')
 
         # simulate an oauth_callback_confirmed=false
-        with patch('requests.post') as fake:
+        with mock.patch('requests.post') as fake:
             response = fake.return_value
             response.status_code = 200
             response.text = 'oauth_callback_confirmed=false'
@@ -84,7 +83,7 @@ class ViewTests(testing.TestCase):
         res.mustcontain('No oauth_token was found in the session')
 
         # bad request because oauth tokens are different
-        with patch('requests.post') as fake:
+        with mock.patch('requests.post') as fake:
             response = fake.return_value
             response.status_code = 200
             response.text = 'oauth_callback_confirmed=true&oauth_token=987654321'
@@ -95,7 +94,7 @@ class ViewTests(testing.TestCase):
             res.mustcontain("OAuth tokens don't match")
 
         # good request, twitter is not happy with us
-        with patch('requests.post') as fake:
+        with mock.patch('requests.post') as fake:
             response = fake.return_value
             response.status_code = 200
             response.text = 'oauth_callback_confirmed=true&oauth_token=123456789'

@@ -18,11 +18,9 @@
 
 import unittest
 
-from mock import patch
-
 from pyramid.testing import DummyRequest
 
-from yithlibraryserver.compat import urlparse
+from yithlibraryserver.compat import mock, urlparse
 from yithlibraryserver.oauth2.client import get_user_info
 from yithlibraryserver.oauth2.client import oauth2_step1, oauth2_step2
 
@@ -30,7 +28,7 @@ from yithlibraryserver.oauth2.client import oauth2_step1, oauth2_step2
 class Oauth2ClientTests(unittest.TestCase):
 
     def test_oauth2_step1(self):
-        with patch('uuid.uuid4') as fake:
+        with mock.patch('uuid.uuid4') as fake:
             fake.return_value = 'random-string'
 
             request = DummyRequest()
@@ -87,7 +85,7 @@ class Oauth2ClientTests(unittest.TestCase):
         self.assertEqual(response.status, '401 Unauthorized')
         self.assertEqual(response.message, 'State parameter does not match internal state. You may be a victim of CSRF')
 
-        with patch('requests.post') as fake:
+        with mock.patch('requests.post') as fake:
             fake.return_value.status_code = 401
             fake.return_value.text = 'Unauthorized request'
             request.session['state'] = 'random-string'
@@ -97,7 +95,7 @@ class Oauth2ClientTests(unittest.TestCase):
             self.assertEqual(response.status, '401 Unauthorized')
             self.assertEqual(response.message, 'Unauthorized request')
 
-        with patch('requests.post') as fake:
+        with mock.patch('requests.post') as fake:
             fake.return_value.status_code = 200
             fake.return_value.json = lambda: {
                 'access_token': 'qwerty'
@@ -108,7 +106,7 @@ class Oauth2ClientTests(unittest.TestCase):
                                     redirect_url, scope)
             self.assertEqual(response, 'qwerty')
 
-        with patch('requests.post') as fake:
+        with mock.patch('requests.post') as fake:
             fake.return_value.status_code = 200
             fake.return_value.json = lambda: None
             fake.return_value.text = 'access_token=qwerty'
@@ -119,7 +117,7 @@ class Oauth2ClientTests(unittest.TestCase):
             self.assertEqual(response, 'qwerty')
 
     def test_get_user_info(self):
-        with patch('requests.get') as fake:
+        with mock.patch('requests.get') as fake:
             fake.return_value.status_code = 401
             fake.return_value.text = 'Unauthorized request'
 
@@ -127,7 +125,7 @@ class Oauth2ClientTests(unittest.TestCase):
             self.assertEqual(response.status, '401 Unauthorized')
             self.assertEqual(response.message, 'Unauthorized request')
 
-        with patch('requests.get') as fake:
+        with mock.patch('requests.get') as fake:
             fake.return_value.status_code = 200
             fake.return_value.json = lambda: {
                 'name': 'John',

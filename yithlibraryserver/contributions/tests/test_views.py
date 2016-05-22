@@ -19,7 +19,6 @@
 import datetime
 
 from freezegun import freeze_time
-from mock import patch
 
 from pyramid_mailer import get_mailer
 
@@ -27,6 +26,7 @@ from pyramid_sqlalchemy import Session
 
 import transaction
 
+from yithlibraryserver.compat import mock
 from yithlibraryserver.contributions.models import Donation
 from yithlibraryserver.testing import TestCase
 from yithlibraryserver.user.models import User
@@ -69,7 +69,7 @@ class TestViews(TestCase):
         self.assertEqual(res.status, '400 Bad Request')
 
     def test_contributions_donate(self):
-        with patch('requests.post') as fake:
+        with mock.patch('requests.post') as fake:
             fake.return_value.ok = True
             fake.return_value.text = 'ACK=Success&TOKEN=123'
             res = self.testapp.post('/contribute/donate', {
@@ -110,7 +110,7 @@ class TestViews(TestCase):
         self.assertEqual(session['_f_error'], ['There was a problem in the confirmation process. Please start the checkout again'])
 
     def test_contributions_confirm_details(self):
-        with patch('requests.post') as fake:
+        with mock.patch('requests.post') as fake:
             fake.return_value.ok = True
             fake.return_value.text = 'ACK=Success&AMT=5.00&FIRSTNAME=John&LASTNAME=Doe&SHIPTOCITY=ExampleCity&SHIPTOCOUNTRYNAME=ExampleCountry&SHIPTOSTATE=ExampleState&SHIPTOSTREET=ExampleStreet&SHIPTOZIP=123456&EMAIL=john@example.com'
             res = self.testapp.get('/contribute/paypal-success-callback?token=123&PayerID=456')
@@ -160,7 +160,7 @@ class TestViews(TestCase):
 
     @freeze_time('2013-01-02 10:11:02')
     def test_contributions_confirm_success_with_sticker(self):
-        with patch('requests.post') as fake:
+        with mock.patch('requests.post') as fake:
             fake.return_value.ok = True
             fake.return_value.text = 'ACK=Success'
 
@@ -238,7 +238,7 @@ class TestViews(TestCase):
 
     @freeze_time('2013-01-02 10:11:02')
     def test_contributions_confirm_success_with_no_sticker_small_contribution(self):
-        with patch('requests.post') as fake:
+        with mock.patch('requests.post') as fake:
             fake.return_value.ok = True
             fake.return_value.text = 'ACK=Success'
 
@@ -316,7 +316,7 @@ class TestViews(TestCase):
 
     @freeze_time('2013-01-02 10:11:02')
     def test_contributions_confirm_success_with_no_sticker_user_donate_all_money(self):
-        with patch('requests.post') as fake:
+        with mock.patch('requests.post') as fake:
             fake.return_value.ok = True
             fake.return_value.text = 'ACK=Success'
 
@@ -397,7 +397,7 @@ class TestViews(TestCase):
     def test_contributions_confirm_success_with_user(self):
         user, user_id = create_and_login_user(self.testapp)
 
-        with patch('requests.post') as fake:
+        with mock.patch('requests.post') as fake:
             fake.return_value.ok = True
             fake.return_value.text = 'ACK=Success'
 

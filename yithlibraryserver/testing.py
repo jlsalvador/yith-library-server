@@ -21,8 +21,6 @@
 import collections
 import unittest
 
-import mock
-
 from webtest import TestApp
 
 from pyramid.httpexceptions import HTTPFound
@@ -40,6 +38,7 @@ from sqlalchemy import create_engine
 import transaction
 
 from yithlibraryserver import main
+from yithlibraryserver.compat import mock
 
 
 class FakeRequest(DummyRequest):

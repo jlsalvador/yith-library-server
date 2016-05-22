@@ -66,3 +66,9 @@ if PY3:  # pragma: no cover
 else:  # pragma: no cover
     from StringIO import StringIO
     BytesIO = StringIO
+
+
+if PY3:  # pragma: no cover
+    from unittest import mock
+else:  # pragma: no cover
+    import mock

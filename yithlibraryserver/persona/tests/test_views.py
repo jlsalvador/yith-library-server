@@ -16,9 +16,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
-from mock import patch
-
 from yithlibraryserver import testing
+from yithlibraryserver.compat import mock
 
 
 class ViewTests(testing.TestCase):
@@ -33,7 +32,7 @@ class ViewTests(testing.TestCase):
         self.assertEqual(res.status, '400 Bad Request')
         res.mustcontain('The assertion parameter is required')
 
-        with patch('requests.post') as fake_post:
+        with mock.patch('requests.post') as fake_post:
             fake_post.return_value.ok = False
             res = self.testapp.post('/persona/login', {
                 'assertion': 'test-assertion',
@@ -42,7 +41,7 @@ class ViewTests(testing.TestCase):
             self.assertEqual(res.status, '500 Internal Server Error')
             res.mustcontain('Mozilla Persona verifier is not working properly')
 
-        with patch('requests.post') as fake_post:
+        with mock.patch('requests.post') as fake_post:
             fake_post.return_value.ok = True
             fake_post.return_value.json = lambda: {
                 'status': 'failure',
@@ -54,7 +53,7 @@ class ViewTests(testing.TestCase):
             self.assertEqual(res.status, '403 Forbidden')
             res.mustcontain('Mozilla Persona verifier can not verify your identity')
 
-        with patch('requests.post') as fake_post:
+        with mock.patch('requests.post') as fake_post:
             fake_post.return_value.ok = True
             fake_post.return_value.json = lambda: {
                 'status': 'okay',

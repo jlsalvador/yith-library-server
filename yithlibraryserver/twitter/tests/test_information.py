@@ -19,10 +19,10 @@
 # along with Yith Library Server.  If not, see <http://www.gnu.org/licenses/>.
 
 import unittest
-from mock import patch
 
 from pyramid.httpexceptions import HTTPUnauthorized
 
+from yithlibraryserver.compat import mock
 from yithlibraryserver.twitter.information import get_user_info
 
 
@@ -38,14 +38,14 @@ class InformationTests(unittest.TestCase):
         }
 
     def test_get_user_info(self):
-        with patch('requests.post') as fake:
+        with mock.patch('requests.post') as fake:
             response = fake.return_value
             response.ok = True
             response.json = lambda: {
                 'token_type': 'bearer',
                 'access_token': '1234567890',
             }
-            with patch('requests.get') as fake2:
+            with mock.patch('requests.get') as fake2:
                 response2 = fake2.return_value
                 response2.ok = True
                 response2.json = lambda: {
@@ -55,7 +55,7 @@ class InformationTests(unittest.TestCase):
                 self.assertEqual(info, {'screen_name': 'John Doe'})
 
     def test_get_user_info_non_authorized(self):
-        with patch('requests.post') as fake:
+        with mock.patch('requests.post') as fake:
             response = fake.return_value
             response.ok = False
 
@@ -63,14 +63,14 @@ class InformationTests(unittest.TestCase):
                               get_user_info, self.settings, '1234')
 
     def test_get_user_info_non_authorized2(self):
-        with patch('requests.post') as fake:
+        with mock.patch('requests.post') as fake:
             response = fake.return_value
             response.ok = True
             response.json = lambda: {
                 'token_type': 'bearer',
                 'access_token': '1234567890',
             }
-            with patch('requests.get') as fake2:
+            with mock.patch('requests.get') as fake2:
                 response2 = fake2.return_value
                 response2.ok = False
 

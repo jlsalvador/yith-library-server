@@ -24,8 +24,6 @@ from freezegun import freeze_time
 
 from deform import ValidationFailure
 
-from mock import patch
-
 from pyramid_mailer import get_mailer
 
 from pyramid_sqlalchemy import Session
@@ -34,7 +32,7 @@ from sqlalchemy.orm.exc import NoResultFound
 
 import transaction
 
-from yithlibraryserver.compat import url_quote
+from yithlibraryserver.compat import mock, url_quote
 from yithlibraryserver.testing import TestCase
 from yithlibraryserver.oauth2.models import (
     AccessCode,
@@ -327,7 +325,7 @@ class ViewTests(TestCase):
             'user_info__email': 'john@example.com',
         }, status=302)
 
-        with patch('deform.Form.validate') as fake:
+        with mock.patch('deform.Form.validate') as fake:
             fake.side_effect = DummyValidationFailure('f', 'c', 'e')
             res = self.testapp.post('/register', {
                 'submit': 'Register into Yith Library',
@@ -397,7 +395,7 @@ class ViewTests(TestCase):
         create_and_login_user(self.testapp)
 
         # make the form fail
-        with patch('deform.Form.validate') as fake:
+        with mock.patch('deform.Form.validate') as fake:
             fake.side_effect = DummyValidationFailure('f', 'c', 'e')
             res = self.testapp.post('/profile', {
                 'submit': 'Save Changes',
@@ -429,7 +427,7 @@ class ViewTests(TestCase):
         create_and_login_user(self.testapp)
 
         # make the form fail
-        with patch('deform.Form.validate') as fake:
+        with mock.patch('deform.Form.validate') as fake:
             fake.side_effect = DummyValidationFailure('f', 'c', 'e')
             res = self.testapp.post('/destroy', {
                 'reason': '',
@@ -1007,7 +1005,7 @@ class PreferencesTests(TestCase):
     def test_form_fail(self):
         create_and_login_user(self.testapp, allow_google_analytics=False)
         # make the form fail
-        with patch('deform.Form.validate') as fake:
+        with mock.patch('deform.Form.validate') as fake:
             fake.side_effect = DummyValidationFailure('f', 'c', 'e')
             res = self.testapp.post('/preferences', {
                 'submit': 'Save Changes',

@@ -18,10 +18,9 @@
 
 import unittest
 
-from mock import patch
-
 from pyramid import testing
 
+from yithlibraryserver.compat import mock
 from yithlibraryserver.contributions.paypal import PayPalPayload
 from yithlibraryserver.contributions.paypal import PayPalExpressCheckout
 
@@ -124,7 +123,7 @@ class PayPalExpressCheckoutTests(unittest.TestCase):
         self.assertEqual(pec.express_checkout_url,
                          'http://paypal.com/express_checkout')
 
-        with patch('requests.post') as fake:
+        with mock.patch('requests.post') as fake:
             fake.return_value.ok = True
             fake.return_value.text = 'ACK=Success&TOKEN=123'
             result = pec.get_express_checkout_token(5)
@@ -159,7 +158,7 @@ class PayPalExpressCheckoutTests(unittest.TestCase):
         self.assertEqual(pec.express_checkout_url,
                          'http://paypal.com/express_checkout')
 
-        with patch('requests.post') as fake:
+        with mock.patch('requests.post') as fake:
             fake.return_value.ok = True
             fake.return_value.text = 'ACK=Success&AMT=5.00&FIRSTNAME=John&LASTNAME=Doe&SHIPTOCITY=ExampleCity&SHIPTOCOUNTRYNAME=ExampleCountry&SHIPTOSTATE=ExampleState&SHIPTOSTREET=ExampleStreet&SHIPTOZIP=123456&EMAIL=john@example.com'
             result = pec.get_express_checkout_details('123', '456')
@@ -191,7 +190,7 @@ class PayPalExpressCheckoutTests(unittest.TestCase):
         self.assertEqual(pec.express_checkout_url,
                          'http://paypal.com/express_checkout')
 
-        with patch('requests.post') as fake:
+        with mock.patch('requests.post') as fake:
             fake.return_value.ok = True
             fake.return_value.text = 'ACK=Success'
             result = pec.do_express_checkout_payment('123', '456', 5)
