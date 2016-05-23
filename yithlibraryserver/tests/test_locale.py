@@ -31,7 +31,7 @@ class DatesFormatterTests(unittest.TestCase):
         date = datetime.date(2012, 12, 12)
 
         self.assertEqual(df_en.date(date), 'Dec 12, 2012')
-        self.assertEqual(df_es.date(date), '12/12/2012')
+        self.assertEqual(df_es.date(date), '12 dic. 2012')
 
     def test_datetime(self):
         df_en = DatesFormatter('en')
@@ -40,4 +40,4 @@ class DatesFormatterTests(unittest.TestCase):
         date = datetime.datetime(2012, 12, 12, 12, 12, 12)
 
         self.assertEqual(df_en.datetime(date), 'Dec 12, 2012, 12:12:12 PM')
-        self.assertEqual(df_es.datetime(date), '12/12/2012 12:12:12')
+        self.assertEqual(df_es.datetime(date), '12 dic. 2012 12:12:12')
