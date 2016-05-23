@@ -27,7 +27,7 @@ zope.sqlalchemy==0.7.6   # required by pyramid_sqlalchemy
 # direct dependencies
 Babel==2.3.4
 deform==0.9.9
-lingua==3.9
+lingua==4.9
 oauthlib==0.7.2
 psycopg2==2.6
 pyramid==1.5.4
