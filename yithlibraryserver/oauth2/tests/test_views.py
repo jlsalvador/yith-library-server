@@ -62,7 +62,7 @@ class AuthorizationEndpointTests(TestCase):
         res = self.testapp.get('/oauth2/endpoints/authorization',
                                status=400)
         self.assertEqual(res.status, '400 Bad Request')
-        res.mustcontain('Error is: invalid_client_id')
+        res.mustcontain('Error is: invalid_request')
 
     def test_invalid_client_id(self):
         create_and_login_user(self.testapp)
@@ -70,7 +70,7 @@ class AuthorizationEndpointTests(TestCase):
             'client_id': '1234',
         }, status=400)
         self.assertEqual(res.status, '400 Bad Request')
-        res.mustcontain('Error is: invalid_client_id')
+        res.mustcontain('Error is: invalid_request')
 
     def _assert_error(self, url, error, description=None):
         query = urlparse.parse_qs(urlparse.urlparse(url).query)
@@ -99,7 +99,7 @@ class AuthorizationEndpointTests(TestCase):
             'redirect_uri': 'https://example.com/bad-callback',
         }, status=400)
         self.assertEqual(res.status, '400 Bad Request')
-        res.mustcontain('Error is: mismatching_redirect_uri')
+        res.mustcontain('Error is: invalid_request')
 
     def test_user_cancel(self):
         create_and_login_user(self.testapp)
@@ -253,7 +253,7 @@ class AuthorizationEndpointTests(TestCase):
             'scope': 'read-passwords',
         }, status=400)
         self.assertEqual(res.status, '400 Bad Request')
-        res.mustcontain('Error is: mismatching_redirect_uri')
+        res.mustcontain('Error is: invalid_request')
 
     @freeze_time('2012-01-10 15:31:11')
     def test_no_response_type_in_post(self):
