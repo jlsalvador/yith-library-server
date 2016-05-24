@@ -87,7 +87,7 @@ if sys.version_info[0] < 3:
 
 if platform.python_implementation() == 'PyPy':
     requirements['base'].extend(requirements['pypy'])
-    requirements['base'].remove('psycopg2==2.6')
+    requirements['base'].remove('psycopg2==2.6.1')
 
 
 setup(
