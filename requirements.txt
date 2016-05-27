@@ -35,7 +35,7 @@ pyramid_chameleon==0.3
 pyramid_mailer==0.13
 pyramid_redis_sessions==1.0.1
 pyramid_tm==0.7
-pyramid_sna==0.3.1
+pyramid_sna==0.3.2
 pyramid_sqlalchemy==1.2.2
 pyramid_webassets==0.9
 raven==5.18.0
