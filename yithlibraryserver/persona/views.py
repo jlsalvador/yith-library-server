@@ -21,7 +21,7 @@ import hashlib
 import requests
 
 from pyramid.httpexceptions import HTTPBadRequest, HTTPForbidden
-from pyramid.httpexceptions import HTTPMethodNotAllowed, HTTPServerError
+from pyramid.httpexceptions import HTTPMethodNotAllowed, HTTPBadGateway
 
 from yithlibraryserver.user.utils import register_or_update
 from yithlibraryserver.persona.audience import get_audience
@@ -56,4 +56,4 @@ def persona_login(request):
         else:
             return HTTPForbidden('Mozilla Persona verifier can not verify your identity')
     else:
-        return HTTPServerError('Mozilla Persona verifier is not working properly')
+        return HTTPBadGateway('Mozilla Persona verifier is not working properly')

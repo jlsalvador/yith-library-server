@@ -30,7 +30,7 @@ deform==0.9.9
 lingua==4.9
 oauthlib==1.1.1
 psycopg2==2.6.1
-pyramid==1.5.4
+pyramid==1.7
 pyramid_chameleon==0.3
 pyramid_mailer==0.14.1
 pyramid_redis_sessions==1.0.1

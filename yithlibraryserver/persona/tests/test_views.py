@@ -37,8 +37,8 @@ class ViewTests(testing.TestCase):
             res = self.testapp.post('/persona/login', {
                 'assertion': 'test-assertion',
                 'next_url': 'http://localhost/oauth2/clients',
-            }, status=500)
-            self.assertEqual(res.status, '500 Internal Server Error')
+            }, status=502)
+            self.assertEqual(res.status, '502 Bad Gateway')
             res.mustcontain('Mozilla Persona verifier is not working properly')
 
         with mock.patch('requests.post') as fake_post:
