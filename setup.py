@@ -23,47 +23,20 @@ import platform
 import sys
 
 from setuptools import setup, find_packages
+join = os.path.join
 
 here = os.path.abspath(os.path.dirname(__file__))
-README = open(os.path.join(here, 'README.rst')).read()
-CHANGES = open(os.path.join(here, 'CHANGES.rst')).read()
+README = open(join(here, 'README.rst')).read()
+CHANGES = open(join(here, 'CHANGES.rst')).read()
 
 
-def parse_requirements():
-    """Parses requirements.txt file into a dictionary.
+def parse_requirements(requirements_file):
+    """Parses requirements.txt file into a list."""
+    requirements = []
 
-    requirements.txt should be structuctured in sections. Each section
-    should begin with a comment and the name of the section. E.g.:
-
-    # base #
-    package1
-    package2==1.0
-
-    # other #
-    package3<=4.2
-
-    Then the packages per section can be accessed like this:
-
-    >>> requirements = parse_requirements()
-    >>> requirements['base']
-    ['package1', 'package2==1.0']
-    >>> requirements['other']
-    ['package3<=4.2']
-    >>> requirements['all']
-    ['package1', 'package2==1.0', 'package3<=4.2']
-
-    """
-    requirements = {}
-    all_requirements = []
-
-    with open('requirements.txt', 'r') as requirements_file:
-        current_section = None
+    with open(join(here, requirements_file), 'r') as requirements_file:
         for line in requirements_file:
             line = line.strip()
-            if line.startswith('#') and line.endswith('#'):
-                current_section = line.strip('#').strip()
-                requirements[current_section] = []
-                continue
 
             # remove inline comments
             if '#' in line:
@@ -71,23 +44,23 @@ def parse_requirements():
                 line = line.strip()
 
             if line:
-                if current_section is not None:
-                    requirements[current_section].append(line)
-                all_requirements.append(line)
-
-    requirements['all'] = all_requirements
+                requirements.append(line)
 
     return requirements
 
-requirements = parse_requirements()
+base_requirements = parse_requirements('requirements.txt')
 
 if sys.version_info[0] < 3:
     # packages that only work in Python 2.x
-    requirements['base'].extend(requirements['python2'])
+    base_requirements += parse_requirements(join('requirements', 'python2.txt'))
 
 if platform.python_implementation() == 'PyPy':
-    requirements['base'].extend(requirements['pypy'])
-    requirements['base'].remove('psycopg2==2.6.1')
+    base_requirements += parse_requirements(join('requirements', 'pypy.txt'))
+    base_requirements.remove('psycopg2==2.6.1')
+
+docs_requirements = parse_requirements(join('requirements', 'docs.txt'))
+test_support_requirements = parse_requirements(join('requirements', 'test_support.txt'))
+testing_requirements = parse_requirements(join('requirements', 'testing.txt'))
 
 
 setup(
@@ -119,14 +92,14 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
-    install_requires=requirements['base'],
-    tests_require=requirements['base'] + requirements['test support'],
-    extras_require = {
-        'testing': requirements['testing'] + requirements['test support'],
-        'docs': requirements['docs'],
+    install_requires=base_requirements,
+    tests_require=base_requirements + test_support_requirements,
+    extras_require={
+        'testing': testing_requirements + test_support_requirements,
+        'docs': docs_requirements,
     },
     test_suite="yithlibraryserver",
-    entry_points = """\
+    entry_points="""\
     [paste.app_factory]
     main = yithlibraryserver:main
     [console_scripts]

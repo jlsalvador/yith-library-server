@@ -1,0 +1,4 @@
+docutils==0.12   # required by Sphinx
+Jinja2==2.8      # required by Sphinx
+MarkupSafe==0.23 # required by Jinja2
+Sphinx==1.4.1
