@@ -116,7 +116,7 @@ def main(global_config, **settings):
 
     # webassets
     settings['webassets.base_dir'] = 'yithlibraryserver:static'
-    settings['webassets.base_url'] = 'static'
+    settings['webassets.base_url'] = '/static'
     settings['webassets.static_view'] = 'True'
     here = os.path.dirname(os.path.abspath(__file__))
     manifest_path = ('static', 'build', 'manifest.json')
