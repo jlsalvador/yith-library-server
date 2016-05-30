@@ -1,9 +1,24 @@
 unreleased
 ----------
 
+- New Features:
+
+  - Add support for Python 3.5
+  - Update dependencies
+  - Small improvements in development mode (contributed by Fidel Ramos)
+  - Small documentation improvements (contributed by Fidel Ramos)
+  - Use Redis for sessions instead of local files
+  - Build the web assets at build time
+  - Compile translation catalogs at build time
+  - Use flake8 as a pre-commit hook
+  - Daily script to clean expired access codes
+  - Update the donations page with our new providers
+
 - Bug fixes:
 
+  - Fix bug when parsing dates with milliseconds
   - Make background images from CSS rules work (Lorenzo Gil)
+  - Fix integrity bug when destroying an account
 
 0.3 (2015-07-07)
 ----------------
