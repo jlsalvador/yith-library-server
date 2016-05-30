@@ -13,6 +13,7 @@ unreleased
   - Use flake8 as a pre-commit hook
   - Daily script to clean expired access codes
   - Update the donations page with our new providers
+  - Use official PyPI mirror on Openshift
 
 - Bug fixes:
 
