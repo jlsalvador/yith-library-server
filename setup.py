@@ -48,7 +48,7 @@ def parse_requirements(requirements_file):
 
     return requirements
 
-base_requirements = parse_requirements('requirements.txt')
+base_requirements = []
 
 if sys.version_info[0] < 3:
     # packages that only work in Python 2.x
@@ -56,6 +56,10 @@ if sys.version_info[0] < 3:
 
 if platform.python_implementation() == 'PyPy':
     base_requirements += parse_requirements(join('requirements', 'pypy.txt'))
+
+base_requirements += parse_requirements('requirements.txt')
+
+if platform.python_implementation() == 'PyPy':
     base_requirements.remove('psycopg2==2.6.1')
 
 docs_requirements = parse_requirements(join('requirements', 'docs.txt'))
