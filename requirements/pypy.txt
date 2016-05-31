@@ -1,2 +1,1 @@
 psycopg2cffi==2.7.4  # psycopg2 for pypy
-setuptools==21.2.2
