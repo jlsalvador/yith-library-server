@@ -66,7 +66,7 @@ testing_requirements = parse_requirements(join('requirements', 'testing.txt'))
 
 setup(
     name='yith-library-server',
-    version='0.3',
+    version='0.4',
     description='yith-library-server',
     long_description=README + '\n\n' + CHANGES,
     classifiers=[
