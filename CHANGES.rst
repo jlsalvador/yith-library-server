@@ -17,6 +17,7 @@ unreleased
 
 - Bug fixes:
 
+  - Run the tests on Travis the same way Tox run them locally
   - Fix bug when parsing dates with milliseconds
   - Make background images from CSS rules work (Lorenzo Gil)
   - Fix integrity bug when destroying an account
