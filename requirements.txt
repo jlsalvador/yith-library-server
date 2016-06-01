@@ -41,14 +41,3 @@ requests==2.10.0
 waitress==0.9.0
 newrelic==2.66.0.49
 flake8==2.5.4
-
-# unknown dependencies
-#argparse
-#contextlib2
-#funcsigs
-#linecache2
-#ordereddict
-#pbr
-#paste
-#traceback
-#unittest2
