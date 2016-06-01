@@ -1,13 +1,1 @@
-# indirect dependencies
-argparse==1.4.0       # required by unittest2
-contextlib2==0.5.3    # required by raven
-linecache2==1.0.0     # required by traceback2
-traceback2==1.4.0     # required by unittest2
-unittest2==1.1.0      # required by Chameleon
-ordereddict==1.1      # required by funcsigs
-funcsigs==1.0.2       # required by mock
-six==1.10.0           # required by mock
-pbr==1.10.0           # required by mock
-
-# direct dependencies
 mock==2.0.0

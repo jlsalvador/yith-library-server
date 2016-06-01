@@ -15,8 +15,8 @@ before_install:
   - sudo cat "$CONFIG_FILE"
   - sudo service postgresql restart 9.3
 install:
-  - pip install setuptools==21.2.2
-  - python setup.py develop
+  - python setup.py sdist --formats=zip
+  - pip install dist/*.zip
   - pip install coveralls
 before_script:
   - psql template1 -c 'CREATE EXTENSION "uuid-ossp";' -U postgres
