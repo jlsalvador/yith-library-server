@@ -55,7 +55,7 @@ if sys.version_info[0] < 3:
     base_requirements += parse_requirements(join('requirements', 'python2.txt'))
     # make sure pbr goes last since it does monkey patching
     base_requirements.remove('pbr==1.10.0')
-    base_requirements.append('pbr==1.10.0')
+    base_requirements = ['pbr==1.10.0'] + base_requirements
     # See https://bugs.python.org/msg170215
     try:
         import multiprocessing  # NOQ
