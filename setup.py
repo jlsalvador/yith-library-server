@@ -53,6 +53,11 @@ base_requirements = parse_requirements('requirements.txt')
 if sys.version_info[0] < 3:
     # packages that only work in Python 2.x
     base_requirements += parse_requirements(join('requirements', 'python2.txt'))
+    # See https://bugs.python.org/msg170215
+    try:
+        import multiprocessing  # NOQ
+    except ImportError:
+        pass
 
 if platform.python_implementation() == 'PyPy':
     base_requirements += parse_requirements(join('requirements', 'pypy.txt'))
