@@ -188,9 +188,15 @@
         <h2 i18n:translate="">Give us your money</h2>
         <p i18n:translate="">Well, not all of them, but it would be great if you could contribute a very small amount of money to maintain this service.</p>
         <p i18n:translate="">This is how we will spend that money:</p>
+        <div class="pull-right">
+          <a href="https://www.openshift.com/">
+            <img src="${request.static_path('yithlibraryserver:static/img/powered_by_openshift.png')}" width="180" height="48" alt="Powered by Openshift" />
+            </a>
+        </div>
         <dl>
           <dt i18n:translate="">Hosting</dt>
-          <dd i18n:translate="">Right now we are using <a href="https://www.openshift.com/" i18n:name="openshift">OpenShift</a> as our hosting provider because we got a grant from them due to the open source nature of Yith Library. We are really grateful to them but we realize that we are slowly growing up and at some point that grant will not be enough for us.</dd>
+          <dd i18n:translate="">Right now we are using <a href="https://www.openshift.com/" i18n:name="openshift">OpenShift</a> as our hosting provider because we got a grant from them due to the open source nature of Yith Library. We are really grateful to them but we realize that we are slowly growing up and at some point that grant will not be enough for us.
+          </dd>
           <dt i18n:translate="">SSL Certificate</dt>
           <dd i18n:translate="">Having a strong SSL Certificate to serve all Yith Library resources is quite important in an application like this. We are using free class 1 <a href="http://www.startssl.com/" i18n:name="startssl">StartSSL</a> certificates but we would like to upgrade to class 2 certificates to provide a better experience for our users and avoid some browser's security warnings.</dd>
           <dt i18n:translate="">Email services</dt>
