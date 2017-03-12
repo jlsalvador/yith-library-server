@@ -41,7 +41,8 @@ def extract_params(request):
 def create_response(headers, body, status):
     headerlist = [(native_(k), native_(v))
                   for k, v in headers.items()]
-    return Response(body=body, status=status, headerlist=headerlist)
+    return Response(body=body, status=status, headerlist=headerlist,
+                    charset='utf8')
 
 
 def response_from_error(error):

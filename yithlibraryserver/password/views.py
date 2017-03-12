@@ -64,6 +64,7 @@ class PasswordCollectionRESTView(object):
         if errors:
             result = {'message': ','.join(errors)}
             return HTTPBadRequest(body=json.dumps(result),
+                                  charset='utf8',
                                   content_type='application/json')
 
         password = Password(**cleaned_data)
@@ -131,6 +132,7 @@ class PasswordRESTView(object):
             if errors:
                 result = {'message': ','.join(errors)}
                 return HTTPBadRequest(body=json.dumps(result),
+                                      charset='utf8',
                                       content_type='application/json')
 
             password.secret = cleaned_data['secret']

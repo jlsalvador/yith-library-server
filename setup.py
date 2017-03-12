@@ -56,7 +56,7 @@ if sys.version_info[0] < 3:
 
 if platform.python_implementation() == 'PyPy':
     base_requirements += parse_requirements(join('requirements', 'pypy.txt'))
-    base_requirements.remove('psycopg2==2.6.1')
+    base_requirements.remove('psycopg2==2.6.2')
 
 
 docs_requirements = parse_requirements(join('requirements', 'docs.txt'))
