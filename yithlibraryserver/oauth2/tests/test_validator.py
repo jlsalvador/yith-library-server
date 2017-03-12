@@ -109,8 +109,8 @@ class RequestValidatorTests(TestCase):
 
     def test_get_default_redirect_uri(self):
         rv, request = self._create_request_validator()
-        self.assertEquals(rv.get_default_redirect_uri(self.app_id, request),
-                          'https://example.com/callback')
+        self.assertEqual(rv.get_default_redirect_uri(self.app_id, request),
+                         'https://example.com/callback')
 
     def test_validate_scopes_true(self):
         rv, request = self._create_request_validator()
@@ -140,8 +140,8 @@ class RequestValidatorTests(TestCase):
 
     def test_get_default_scopes(self):
         rv, request = self._create_request_validator()
-        self.assertEquals(rv.get_default_scopes(self.app_id, request),
-                          ['read-passwords'])
+        self.assertEqual(rv.get_default_scopes(self.app_id, request),
+                         ['read-passwords'])
 
     def test_validate_response_type_code(self):
         rv, request = self._create_request_validator()
@@ -170,12 +170,12 @@ class RequestValidatorTests(TestCase):
         auth_code = Session.query(AuthorizationCode).filter(
             AuthorizationCode.code == 'abcdef',
         ).one()
-        self.assertEquals(auth_code.user_id, self.user_id)
-        self.assertEquals(auth_code.application_id, self.app_id)
-        self.assertEquals(auth_code.scope, ['read-passwords', 'write-passwords'])
-        self.assertEquals(auth_code.redirect_uri, 'https://example.com/callback')
+        self.assertEqual(auth_code.user_id, self.user_id)
+        self.assertEqual(auth_code.application_id, self.app_id)
+        self.assertEqual(auth_code.scope, ['read-passwords', 'write-passwords'])
+        self.assertEqual(auth_code.redirect_uri, 'https://example.com/callback')
         expected_expiration = datetime.datetime(2012, 1, 10, 15, 41, 11)
-        self.assertEquals(auth_code.expiration, expected_expiration)
+        self.assertEqual(auth_code.expiration, expected_expiration)
 
     def test_authenticate_client_no_headers_no_request_attrs(self):
         rv, request = self._create_request_validator()
@@ -265,8 +265,8 @@ class RequestValidatorTests(TestCase):
             client2 = rv2.get_client(self.app_id)
             request2.client = client2
             self.assertTrue(rv2.validate_code(self.app_id, 'abcdef', client2, request2))
-            self.assertEquals(request2.user.id, self.user_id)
-            self.assertEquals(request2.scopes, ['read-passwords', 'write-passwords'])
+            self.assertEqual(request2.user.id, self.user_id)
+            self.assertEqual(request2.scopes, ['read-passwords', 'write-passwords'])
 
     def test_confirm_redirect_uri_no_redirect_uri(self):
         rv, request = self._create_request_validator()
@@ -340,14 +340,14 @@ class RequestValidatorTests(TestCase):
         access_code = Session.query(AccessCode).filter(
             AccessCode.code == 'fghijk'
         ).one()
-        self.assertEquals(access_code.code, 'fghijk')
-        self.assertEquals(access_code.code_type, 'Bearer')
-        self.assertEquals(access_code.scope, ['read-passwords', 'write-passwords'])
-        self.assertEquals(access_code.refresh_code, 'lmnopq')
+        self.assertEqual(access_code.code, 'fghijk')
+        self.assertEqual(access_code.code_type, 'Bearer')
+        self.assertEqual(access_code.scope, ['read-passwords', 'write-passwords'])
+        self.assertEqual(access_code.refresh_code, 'lmnopq')
         expected_expiration = datetime.datetime(2012, 1, 10, 16, 31, 11)
-        self.assertEquals(access_code.expiration, expected_expiration)
-        self.assertEquals(access_code.user_id, self.user_id)
-        self.assertEquals(access_code.application_id, self.app_id)
+        self.assertEqual(access_code.expiration, expected_expiration)
+        self.assertEqual(access_code.user_id, self.user_id)
+        self.assertEqual(access_code.application_id, self.app_id)
 
     @freeze_time('2012-01-10 15:31:11')
     def test_invalidate_authorization_code(self):

@@ -190,7 +190,8 @@ class ViewTests(TestCase):
         here = os.path.dirname(os.path.abspath(__file__))
         backup_filename = 'sample_v_0_2.yith'
         backup_filepath = os.path.join(here, backup_filename)
-        data = open(backup_filepath, 'rb').read()
+        with open(backup_filepath, 'rb') as f:
+            data = f.read()
         res = self.testapp.post(
             '/backup/import', {},
             upload_files=[('passwords-file', backup_filename, data)],
