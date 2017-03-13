@@ -25,7 +25,7 @@ zope.sqlalchemy==0.7.7   # required by pyramid_sqlalchemy
 # direct dependencies
 Babel==2.3.4
 deform==0.9.9   # 2.0.4 available but probably not compatible
-lingua==4.13
+lingua==4.9
 oauthlib==2.0.1
 psycopg2==2.6.2
 pyramid==1.8.2
