@@ -1,4 +1,4 @@
-# indirect dependencies
+# indirect dependencies.
 colander==1.3.2          # required by deform
 Chameleon==3.1           # required by deform, pyramid_chameleon, lingua
 iso8601==0.1.11          # required by colander
@@ -22,7 +22,7 @@ zope.deprecation==4.2.0  # required by deform
 zope.interface==4.3.3    # required by pyramid
 zope.sqlalchemy==0.7.7   # required by pyramid_sqlalchemy
 
-# direct dependencies
+# direct dependencies.
 Babel==2.3.4
 deform==0.9.9   # 2.0.4 available but probably not compatible
 lingua==4.9
