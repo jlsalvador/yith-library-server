@@ -27,7 +27,7 @@ Babel==2.3.4
 deform==0.9.9   # 2.0.4 available but probably not compatible
 lingua==4.9
 oauthlib==2.0.1
-psycopg2==2.6.2
+psycopg2==2.7.4
 pyramid==1.8.2
 pyramid_chameleon==0.3
 pyramid_mailer==0.15.1
